@@ -78,6 +78,20 @@ class AppConfig(BaseSettings):
     SEARCH_PROVIDER: str = "duckduckgo"  # "duckduckgo" or "tavily"
     DUCKDUCKGO_MAX_RESULTS: int = 10
 
+    # Authentication & Security
+    SECRET_KEY: str = "your-secret-key-change-in-production"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # Stripe Configuration
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_PUBLISHABLE_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+
+    # Database (for user management)
+    DATABASE_URL: str = "sqlite:///./ai_research.db"
+
     # LangFuse
     LANGFUSE_HOST: str = ""
     LANGFUSE_PUBLIC_KEY: str = ""

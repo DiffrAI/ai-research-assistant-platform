@@ -8,6 +8,8 @@ from fastapi.routing import APIRouter
 from fastapi_limiter.depends import RateLimiter
 
 from app.core.responses import AppJSONResponse
+from app.apis.v1.auth.controller import get_current_user
+from app.models.user import User
 
 from .models import (
     ExportRequest,
@@ -26,9 +28,9 @@ def get_research_service() -> ResearchService:
     return ResearchService()
 
 
-def get_demo_user_id() -> str:
-    """Get demo user ID for development."""
-    return "demo_user_123"
+def get_user_id_from_token(current_user: User = Depends(get_current_user)) -> str:
+    """Get user ID from JWT token."""
+    return str(current_user.id)
 
 
 @router.post(
@@ -40,7 +42,7 @@ async def conduct_research(
     request: Request,
     research_request: ResearchRequest,
     research_service: ResearchService = Depends(get_research_service),
-    user_id: str = Depends(get_demo_user_id),
+    user_id: str = Depends(get_user_id_from_token),
 ):
     """Conduct AI-powered research with web search and citations."""
     
@@ -67,7 +69,7 @@ async def conduct_research_stream(
     query: str = Query(..., description="Research query"),
     max_results: int = Query(10, description="Maximum number of results"),
     research_service: ResearchService = Depends(get_research_service),
-    user_id: str = Depends(get_demo_user_id),
+    user_id: str = Depends(get_user_id_from_token),
 ):
     """Stream research results in real-time."""
     
@@ -97,7 +99,7 @@ async def save_research(
     research_response: ResearchResponse,
     tags: Optional[List[str]] = Query(None, description="Tags for organization"),
     research_service: ResearchService = Depends(get_research_service),
-    user_id: str = Depends(get_demo_user_id),
+    user_id: str = Depends(get_user_id_from_token),
 ):
     """Save research results for later reference."""
     
@@ -118,7 +120,7 @@ async def save_research(
 @router.get("/research/saved")
 async def get_saved_research(
     request: Request,
-    user_id: str = Depends(get_demo_user_id),
+    user_id: str = Depends(get_user_id_from_token),
     limit: int = Query(10, description="Number of saved researches to return"),
     offset: int = Query(0, description="Offset for pagination"),
 ):
@@ -139,7 +141,7 @@ async def get_saved_research(
 async def get_subscription_info(
     request: Request,
     research_service: ResearchService = Depends(get_research_service),
-    user_id: str = Depends(get_demo_user_id),
+    user_id: str = Depends(get_user_id_from_token),
 ):
     """Get user's subscription information and usage."""
     
@@ -157,7 +159,7 @@ async def export_research(
     request: Request,
     export_request: ExportRequest,
     research_service: ResearchService = Depends(get_research_service),
-    user_id: str = Depends(get_demo_user_id),
+    user_id: str = Depends(get_user_id_from_token),
 ):
     """Export research results in various formats."""
     
@@ -200,7 +202,7 @@ async def get_trending_topics(
 @router.get("/research/analytics")
 async def get_research_analytics(
     request: Request,
-    user_id: str = Depends(get_demo_user_id),
+    user_id: str = Depends(get_user_id_from_token),
     days: int = Query(30, description="Number of days to analyze"),
 ):
     """Get user's research analytics."""

@@ -43,14 +43,14 @@ class ResearchService:
     @staticmethod
     def _check_user_limits(user_id: str) -> Tuple[bool, str]:
         """Check if user has exceeded their search limits."""
-        # TODO: Implement actual user limit checking
+        # TODO: Implement actual user limit checking with database
         # For now, return True (allowed) for demo purposes
         return True, "Search allowed"
 
     @staticmethod
     def _increment_user_usage(user_id: str) -> None:
         """Increment user's search usage count."""
-        # TODO: Implement actual usage tracking
+        # TODO: Implement actual usage tracking with database
         logger.info(f"Incrementing usage for user: {user_id}")
 
     @trace(name="research_service")

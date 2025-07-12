@@ -35,7 +35,7 @@ cd ai-research-assistant-platform
 uv sync
 
 # Create .env file
-cp docs/example.env .env
+cp env.example .env
 ```
 
 ### **2. Configure Environment**
@@ -67,32 +67,64 @@ make run-dev
 
 ### **5. Test the API**
 ```bash
-# Conduct research
+# Register a new user
+curl -X POST "http://localhost:8002/api/v1/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "full_name": "Test User",
+    "password": "password123"
+  }'
+
+# Login
+curl -X POST "http://localhost:8002/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "password123"
+  }'
+
+# Conduct research (with auth token)
 curl -X POST "http://localhost:8002/api/v1/research/research" \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
   -d '{
     "query": "What are the latest developments in quantum computing?",
     "max_results": 5,
     "include_citations": true
   }'
 
-# Get subscription info
-curl "http://localhost:8002/api/v1/research/subscription"
+# Get subscription plans
+curl "http://localhost:8002/api/v1/payment/plans"
 
-# Get trending topics
-curl "http://localhost:8002/api/v1/research/trending"
+# Get usage information
+curl -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  "http://localhost:8002/api/v1/payment/usage"
 ```
 
 ## 📊 **API Endpoints**
 
-### **Research Endpoints**
+### **Authentication Endpoints**
+- `POST /api/v1/auth/register` - Register new user
+- `POST /api/v1/auth/login` - Login with email/password
+- `GET /api/v1/auth/me` - Get current user info
+- `GET /api/v1/auth/subscription` - Get subscription info
+- `POST /api/v1/auth/logout` - Logout user
+- `POST /api/v1/auth/refresh` - Refresh access token
+
+### **Payment Endpoints**
+- `GET /api/v1/payment/plans` - Get subscription plans
+- `POST /api/v1/payment/create-checkout-session` - Create Stripe checkout
+- `POST /api/v1/payment/create-portal-session` - Create billing portal
+- `POST /api/v1/payment/webhook` - Stripe webhook handler
+- `GET /api/v1/payment/usage` - Get usage information
+
+### **Research Endpoints** (Requires Authentication)
 - `POST /api/v1/research/research` - Conduct AI-powered research
 - `GET /api/v1/research/stream` - Stream research results
 - `POST /api/v1/research/save` - Save research results
 - `GET /api/v1/research/saved` - Get saved research
 - `POST /api/v1/research/export` - Export research results
-
-### **Business Endpoints**
 - `GET /api/v1/research/subscription` - Get subscription info
 - `GET /api/v1/research/trending` - Get trending topics
 - `GET /api/v1/research/analytics` - Get user analytics
