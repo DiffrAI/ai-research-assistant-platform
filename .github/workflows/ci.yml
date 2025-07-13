@@ -28,7 +28,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv pip install --system pyproject.toml[dev]
+        uv sync --dev
 
     - name: Run linting
       run: |
@@ -70,7 +70,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv pip install --system pyproject.toml[dev]
+        uv sync --dev
 
     - name: Build package
       run: |
@@ -101,7 +101,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv pip install --system pyproject.toml[dev]
+        uv sync --dev
 
     - name: Run security checks
       run: |

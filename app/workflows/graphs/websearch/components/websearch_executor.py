@@ -33,13 +33,13 @@ class WebSearchExecutor:
         questions = []
 
         # Check for refined_questions first (from question_enhancer)
-        if state.get("refined_questions"):
+        if "refined_questions" in state and state["refined_questions"]:
             questions = state["refined_questions"]
         # Fallback to refined_question (from question_rewriter)
-        elif state.get("refined_question"):
+        elif "refined_question" in state and state["refined_question"]:
             questions = [state["refined_question"]]
         # Final fallback to original question
-        elif state.get("question") and hasattr(state["question"], "content"):
+        elif "question" in state and state["question"] and hasattr(state["question"], "content"):
             questions = [state["question"].content]
         else:
             logger.warning("No questions available for web search")

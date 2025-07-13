@@ -21,7 +21,7 @@ class CustomError(Exception):
 
     def __str__(self) -> str:
         return (
-            f"CustomException: {self.message} (Status Code: {self.status_code}, "
+            f"CustomError: {self.message} (Status Code: {self.status_code}, "
             f"Payload: {self.payload}, Error Log: {self.error_log})"
         )
 
