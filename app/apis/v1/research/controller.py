@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 from fastapi.routing import APIRouter
 from fastapi_limiter.depends import RateLimiter
 
+from app.apis.v1.auth.controller import get_current_user
 from app.core.responses import AppJSONResponse
 from app.models.user import User
 
@@ -24,7 +25,7 @@ def get_research_service() -> ResearchService:
     return ResearchService()
 
 
-def get_user_id_from_token(current_user: User):
+def get_user_id_from_token(current_user: User = Depends(get_current_user)):
     """Get user ID from JWT token."""
     return str(current_user.id)
 
