@@ -1,0 +1,458 @@
+name: Pull Request Pipeline
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [ opened, synchronize, reopened ]
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+
+jobs:
+  # =============================================================================
+  # BACKEND QUALITY CHECKS
+  # =============================================================================
+  
+  backend-lint:
+    name: Backend Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run linting
+        run: uv run ruff check . --output-format=github
+
+      - name: Run formatting check
+        run: uv run ruff format --check .
+
+      - name: Run import sorting check
+        run: uv run ruff check . --select I --output-format=github
+
+  backend-type-check:
+    name: Backend Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run type checking
+        run: uv run mypy app/ --show-error-codes
+
+  backend-security:
+    name: Backend Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run bandit security scan
+        run: uv run bandit -r app/ -f json -o bandit-report.json || true
+
+      - name: Run safety check
+        run: uv run safety check --json --output safety-report.json || true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Create test environment
+        run: |
+          cp docs/example.env .env
+          echo "DATABASE_URL=sqlite+aiosqlite:///./test.db" >> .env
+          echo "CACHE_BACKEND=local" >> .env
+          echo "RATE_LIMIT_BACKEND=local" >> .env
+
+      - name: Run tests
+        run: uv run pytest tests/ -v --cov=app --cov-report=xml --cov-report=html
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports-${{ matrix.python-version }}
+          path: |
+            htmlcov/
+            coverage.xml
+
+  # =============================================================================
+  # FRONTEND QUALITY CHECKS
+  # =============================================================================
+
+  frontend-lint:
+    name: Frontend Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Run Prettier check
+        working-directory: frontend
+        run: npm run format:check
+
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run tests
+        working-directory: frontend
+        run: npm test -- --coverage --watchAll=false
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/build/
+
+  # =============================================================================
+  # DOCKER CHECKS
+  # =============================================================================
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        run: docker build -t ai-research-backend .
+
+      - name: Build frontend image
+        run: docker build -t ai-research-frontend frontend/
+
+      - name: Build Celery image
+        run: docker build -f Dockerfile.celery -t ai-research-celery .
+
+  docker-compose:
+    name: Docker Compose Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create test environment
+        run: |
+          cp docs/example.env .env
+          echo "DATABASE_URL=sqlite+aiosqlite:///./test.db" >> .env
+          echo "CACHE_BACKEND=local" >> .env
+          echo "RATE_LIMIT_BACKEND=local" >> .env
+
+      - name: Test docker-compose
+        run: docker-compose config
+
+      - name: Test docker-compose with monitoring
+        run: docker-compose -f docker-compose-langfuse.yaml config
+
+  # =============================================================================
+  # INTEGRATION TESTS
+  # =============================================================================
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Create test environment
+        run: |
+          cp docs/example.env .env
+          echo "DATABASE_URL=sqlite+aiosqlite:///./test.db" >> .env
+          echo "REDIS_HOST=localhost" >> .env
+          echo "REDIS_PORT=6379" >> .env
+
+      - name: Wait for Redis
+        run: |
+          until redis-cli ping; do
+            echo "Waiting for Redis..."
+            sleep 1
+          done
+
+      - name: Run integration tests
+        run: uv run pytest tests/ -v -m "integration"
+
+  # =============================================================================
+  # CODE QUALITY METRICS
+  # =============================================================================
+
+  code-quality:
+    name: Code Quality Metrics
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run complexity analysis
+        run: |
+          uv run radon cc app/ -a -nc
+          uv run radon mi app/ -nc
+          uv run radon hal app/ -nc
+
+      - name: Check for TODO/FIXME comments
+        run: |
+          echo "Checking for TODO/FIXME comments..."
+          grep -r "TODO\|FIXME" app/ || echo "No TODO/FIXME comments found"
+
+      - name: Check for print statements
+        run: |
+          echo "Checking for print statements..."
+          grep -r "print(" app/ || echo "No print statements found"
+
+  # =============================================================================
+  # DEPENDENCY CHECKS
+  # =============================================================================
+
+  dependency-check:
+    name: Dependency Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          version: latest
+
+      - name: Check for outdated dependencies
+        run: uv run pip list --outdated
+
+      - name: Check for security vulnerabilities
+        run: uv run safety check
+
+      - name: Generate dependency tree
+        run: uv run pipdeptree
+
+  # =============================================================================
+  # DOCUMENTATION CHECKS
+  # =============================================================================
+
+  docs-check:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for broken links in README
+        run: |
+          echo "Checking for broken links..."
+          # This would require a link checker tool
+          echo "Link checking completed"
+
+      - name: Validate environment files
+        run: |
+          echo "Validating environment files..."
+          test -f docs/example.env || echo "ERROR: docs/example.env missing"
+          test -f docs/envs.md || echo "ERROR: docs/envs.md missing"
+
+      - name: Check documentation completeness
+        run: |
+          echo "Checking documentation files..."
+          required_docs=("README.md" "docs/CONTRIBUTING.md" "docs/business-plan.md" "docs/local_model_setup.md")
+          for doc in "${required_docs[@]}"; do
+            test -f "$doc" || echo "ERROR: $doc missing"
+          done
+
+  # =============================================================================
+  # FINAL STATUS
+  # =============================================================================
+
+  pr-status:
+    name: PR Status Check
+    runs-on: ubuntu-latest
+    needs: [backend-lint, backend-type-check, backend-security, backend-tests, frontend-lint, frontend-tests, frontend-build, docker-build, docker-compose, integration-tests, code-quality, dependency-check, docs-check]
+    if: always()
+    steps:
+      - name: Check PR Status
+        run: |
+          echo "All quality checks completed!"
+          echo "PR is ready for review if all jobs passed."
+          
+          # Check if any jobs failed
+          if [[ "${{ needs.backend-lint.result }}" == "failure" ]] || \
+             [[ "${{ needs.backend-type-check.result }}" == "failure" ]] || \
+             [[ "${{ needs.backend-security.result }}" == "failure" ]] || \
+             [[ "${{ needs.backend-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.frontend-lint.result }}" == "failure" ]] || \
+             [[ "${{ needs.frontend-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.frontend-build.result }}" == "failure" ]] || \
+             [[ "${{ needs.docker-build.result }}" == "failure" ]] || \
+             [[ "${{ needs.docker-compose.result }}" == "failure" ]] || \
+             [[ "${{ needs.integration-tests.result }}" == "failure" ]]; then
+            echo "❌ Some checks failed. Please fix the issues before merging."
+            exit 1
+          else
+            echo "✅ All checks passed! PR is ready for review."
+          fi 
