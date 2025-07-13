@@ -6,9 +6,12 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app import settings
 from app.models.user import UserInDB, TokenData, UserCreate, User
+from app.models.user_db import User as UserDB
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -47,108 +50,139 @@ class AuthService:
         """Verify and decode a JWT token."""
         try:
             payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
-            user_id: Optional[int] = payload.get("sub")
+            user_id_str: Optional[str] = payload.get("sub")
             email: Optional[str] = payload.get("email")
             role: Optional[str] = payload.get("role")
             
-            if user_id is None:
+            if user_id_str is None:
+                return None
+            
+            # Convert string user_id to int
+            try:
+                user_id = int(user_id_str)
+            except (ValueError, TypeError):
                 return None
             
             return TokenData(user_id=user_id, email=email, role=role)
         except JWTError:
             return None
 
-    async def authenticate_user(self, email: str, password: str) -> Optional[UserInDB]:
+    async def authenticate_user(self, email: str, password: str, db: AsyncSession) -> Optional[UserInDB]:
         """Authenticate a user with email and password."""
-        # TODO: Implement actual database lookup
-        # For demo purposes, return a mock user
-        if email == "demo@example.com" and password == "password123":
-            return UserInDB(
-                id=1,
-                email=email,
-                full_name="Demo User",
-                hashed_password=self.get_password_hash(password),
-                is_active=True,
-                searches_used_this_month=5,
-                searches_limit=10,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow()
-            )
+        # Get user from database
+        user = await self.get_user_by_email(email, db)
+        if user and self.verify_password(password, user.hashed_password):
+            return user
         return None
 
-    async def create_user(self, user_create: UserCreate) -> UserInDB:
+    async def create_user(self, user_create: UserCreate, db: AsyncSession) -> UserInDB:
         """Create a new user account."""
-        # TODO: Implement actual database creation
-        # For demo purposes, return a mock user
-        return UserInDB(
-            id=1,
+        from app.models.user import UserRole, SubscriptionPlan
+        
+        # Check if user already exists
+        existing_user = await self.get_user_by_email(user_create.email, db)
+        if existing_user:
+            raise ValueError("Email already registered")
+        
+        # Create new user in database
+        db_user = UserDB(
             email=user_create.email,
             full_name=user_create.full_name,
             hashed_password=self.get_password_hash(user_create.password),
+            role=UserRole.USER,
+            subscription_plan=SubscriptionPlan.FREE,
             is_active=True,
             searches_used_this_month=0,
             searches_limit=10,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+        )
+        
+        db.add(db_user)
+        await db.commit()
+        await db.refresh(db_user)
+        
+        # Convert to UserInDB
+        return UserInDB(
+            id=db_user.id,
+            email=db_user.email,
+            full_name=db_user.full_name,
+            hashed_password=db_user.hashed_password,
+            role=db_user.role,
+            subscription_plan=db_user.subscription_plan,
+            is_active=db_user.is_active,
+            searches_used_this_month=db_user.searches_used_this_month,
+            searches_limit=db_user.searches_limit,
+            subscription_expires_at=db_user.subscription_expires_at,
+            created_at=db_user.created_at,
+            updated_at=db_user.updated_at
         )
 
-    async def get_user_by_id(self, user_id: int) -> Optional[UserInDB]:
+    async def get_user_by_id(self, user_id: int, db: AsyncSession) -> Optional[UserInDB]:
         """Get a user by ID."""
-        # TODO: Implement actual database lookup
-        # For demo purposes, return a mock user
-        return UserInDB(
-            id=user_id,
-            email="demo@example.com",
-            full_name="Demo User",
-            hashed_password="hashed_password",
-            is_active=True,
-            searches_used_this_month=5,
-            searches_limit=10,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
+        result = await db.execute(select(UserDB).where(UserDB.id == user_id))
+        db_user = result.scalar_one_or_none()
+        
+        if db_user:
+            return UserInDB(
+                id=db_user.id,
+                email=db_user.email,
+                full_name=db_user.full_name,
+                hashed_password=db_user.hashed_password,
+                role=db_user.role,
+                subscription_plan=db_user.subscription_plan,
+                is_active=db_user.is_active,
+                searches_used_this_month=db_user.searches_used_this_month,
+                searches_limit=db_user.searches_limit,
+                subscription_expires_at=db_user.subscription_expires_at,
+                created_at=db_user.created_at,
+                updated_at=db_user.updated_at
+            )
+        return None
 
-    async def get_user_by_email(self, email: str) -> Optional[UserInDB]:
+    async def get_user_by_email(self, email: str, db: AsyncSession) -> Optional[UserInDB]:
         """Get a user by email."""
-        # TODO: Implement actual database lookup
-        # For demo purposes, return a mock user
-        return UserInDB(
-            id=1,
-            email=email,
-            full_name="Demo User",
-            hashed_password="hashed_password",
-            is_active=True,
-            searches_used_this_month=5,
-            searches_limit=10,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
+        result = await db.execute(select(UserDB).where(UserDB.email == email))
+        db_user = result.scalar_one_or_none()
+        
+        if db_user:
+            return UserInDB(
+                id=db_user.id,
+                email=db_user.email,
+                full_name=db_user.full_name,
+                hashed_password=db_user.hashed_password,
+                role=db_user.role,
+                subscription_plan=db_user.subscription_plan,
+                is_active=db_user.is_active,
+                searches_used_this_month=db_user.searches_used_this_month,
+                searches_limit=db_user.searches_limit,
+                subscription_expires_at=db_user.subscription_expires_at,
+                created_at=db_user.created_at,
+                updated_at=db_user.updated_at
+            )
+        return None
 
-    async def increment_user_searches(self, user_id: int) -> bool:
+    async def increment_user_searches(self, user_id: int, db: AsyncSession) -> bool:
         """Increment user's search count for the current month."""
-        # TODO: Implement actual database update
-        logger.info(f"Incrementing searches for user {user_id}")
-        return True
+        try:
+            result = await db.execute(select(UserDB).where(UserDB.id == user_id))
+            user = result.scalar_one_or_none()
+            if user:
+                user.searches_used_this_month += 1
+                await db.commit()
+                logger.info(f"Incremented searches for user {user_id}")
+                return True
+        except Exception as e:
+            logger.error(f"Error incrementing searches for user {user_id}: {e}")
+            await db.rollback()
+        return False
 
-    def get_current_user(self, token: str) -> Optional[UserInDB]:
+    async def get_current_user(self, token: str, db: AsyncSession) -> Optional[UserInDB]:
         """Get current user from JWT token."""
         token_data = self.verify_token(token)
         if token_data is None:
             return None
         
-        # TODO: Implement actual database lookup
-        # For demo purposes, return a mock user
-        return UserInDB(
-            id=token_data.user_id or 1,
-            email=token_data.email or "demo@example.com",
-            full_name="Demo User",
-            hashed_password="hashed_password",
-            is_active=True,
-            searches_used_this_month=5,
-            searches_limit=10,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
+        # Get user from database
+        return await self.get_user_by_email(token_data.email, db)
 
 
 # Create global auth service instance

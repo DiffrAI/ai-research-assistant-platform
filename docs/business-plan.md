@@ -5,7 +5,7 @@
 The AI Research Assistant Platform is a SaaS solution that leverages local AI models and free web search to provide researchers, students, and professionals with intelligent research capabilities. The platform offers real-time web search, AI-powered summaries, citation management, and export functionality.
 
 **Key Advantages:**
-- **Zero AI costs** (local LM Studio models)
+- **Zero AI costs** (local Ollama models)
 - **Free web search** (DuckDuckGo integration)
 - **Privacy-focused** (local processing)
 - **Scalable architecture** (FastAPI + Docker)
@@ -53,7 +53,7 @@ The AI Research Assistant Platform is a SaaS solution that leverages local AI mo
 ✅ **AI-Powered Research**
 - Real-time web search with DuckDuckGo
 - AI-generated summaries with citations
-- Local model support (LM Studio)
+- Local model support (Ollama)
 
 ✅ **User Management**
 - Subscription tiers and usage tracking
@@ -75,7 +75,7 @@ The AI Research Assistant Platform is a SaaS solution that leverages local AI mo
 
 ### **Current Stack**
 - **Backend**: FastAPI + Python
-- **AI Models**: Local LM Studio + OpenAI fallback
+- **AI Models**: Local Ollama + OpenAI fallback
 - **Search**: DuckDuckGo + Tavily fallback
 - **Caching**: Redis
 - **Deployment**: Docker + Docker Compose

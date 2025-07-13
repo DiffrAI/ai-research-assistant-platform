@@ -4,12 +4,23 @@ from typing import Dict, Any
 
 from fastapi import Depends, HTTPException, Request, status, Header
 from fastapi.routing import APIRouter
+from pydantic import BaseModel
 
 from app.core.responses import AppJSONResponse
 from app.models.user import SubscriptionPlan, get_subscription_limits, User
 from app.services.auth import auth_service
 from app.services.payment import payment_service
 from app.apis.v1.auth.controller import get_current_user
+
+
+class CheckoutSessionRequest(BaseModel):
+    plan: SubscriptionPlan
+    success_url: str
+    cancel_url: str
+
+
+class PortalSessionRequest(BaseModel):
+    return_url: str
 
 router = APIRouter()
 
@@ -41,9 +52,7 @@ async def get_subscription_plans(
 @router.post("/create-checkout-session")
 async def create_checkout_session(
     request: Request,
-    plan: SubscriptionPlan,
-    success_url: str,
-    cancel_url: str,
+    checkout_data: CheckoutSessionRequest,
     current_user: User = Depends(get_current_user),
 ):
     """Create a Stripe checkout session for subscription."""
@@ -64,9 +73,9 @@ async def create_checkout_session(
         # Create checkout session
         checkout_url = await payment_service.create_checkout_session(
             customer_id=customer_id,
-            plan=plan,
-            success_url=success_url,
-            cancel_url=cancel_url
+            plan=checkout_data.plan,
+            success_url=checkout_data.success_url,
+            cancel_url=checkout_data.cancel_url
         )
         
         if not checkout_url:
@@ -91,7 +100,7 @@ async def create_checkout_session(
 @router.post("/create-portal-session")
 async def create_portal_session(
     request: Request,
-    return_url: str,
+    portal_data: PortalSessionRequest,
     current_user: User = Depends(get_current_user),
 ):
     """Create a customer portal session for subscription management."""
@@ -102,7 +111,7 @@ async def create_portal_session(
         
         portal_url = await payment_service.create_portal_session(
             customer_id=customer_id,
-            return_url=return_url
+            return_url=portal_data.return_url
         )
         
         if not portal_url:

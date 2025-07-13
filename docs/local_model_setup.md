@@ -1,6 +1,6 @@
 # Local Model Setup Guide
 
-This guide shows how to use your local LM Studio model instead of OpenAI and DuckDuckGo instead of Tavily.
+This guide shows how to use your local Ollama model instead of OpenAI and DuckDuckGo instead of Tavily.
 
 ## Configuration
 
@@ -9,7 +9,7 @@ Add these settings to your `.env` file:
 ```env
 # Model Configuration
 USE_LOCAL_MODEL=true
-LOCAL_MODEL_URL=http://127.0.0.1:1234
+LOCAL_MODEL_URL=http://127.0.0.1:11434
 
 # Search Provider Configuration
 SEARCH_PROVIDER=duckduckgo  # "duckduckgo" or "tavily"
@@ -24,10 +24,10 @@ TAVILY_API_KEY=your_tavily_api_key_here
 
 ## Setup Steps
 
-### 1. Start LM Studio
-- Open LM Studio
-- Load your preferred model
-- Start the local server on `http://127.0.0.1:1234`
+### 1. Start Ollama
+- Install Ollama from https://ollama.ai
+- Pull your preferred model: `ollama pull qwen2.5:7b`
+- Start Ollama server (runs automatically on `http://127.0.0.1:11434`)
 
 ### 2. Configure Environment
 Create a `.env` file in the project root:
@@ -41,7 +41,7 @@ PORT=8002
 
 # Model Configuration
 USE_LOCAL_MODEL=true
-LOCAL_MODEL_URL=http://127.0.0.1:1234
+LOCAL_MODEL_URL=http://127.0.0.1:11434
 
 # Search Provider Configuration
 SEARCH_PROVIDER=duckduckgo
@@ -76,7 +76,7 @@ curl "http://localhost:8002/api/v1/chat/websearch?question=What%20is%20Python%20
 ### Use Local Model + DuckDuckGo (Free Setup)
 ```env
 USE_LOCAL_MODEL=true
-LOCAL_MODEL_URL=http://127.0.0.1:1234
+LOCAL_MODEL_URL=http://127.0.0.1:11434
 SEARCH_PROVIDER=duckduckgo
 ```
 
@@ -92,7 +92,7 @@ TAVILY_API_KEY=your_tavily_api_key_here
 ```env
 # Local model with Tavily search
 USE_LOCAL_MODEL=true
-LOCAL_MODEL_URL=http://127.0.0.1:1234
+LOCAL_MODEL_URL=http://127.0.0.1:11434
 SEARCH_PROVIDER=tavily
 TAVILY_API_KEY=your_tavily_api_key_here
 
@@ -107,7 +107,7 @@ SEARCH_PROVIDER=duckduckgo
 1. **No API Costs**: Completely free to use
 2. **Privacy**: All processing happens locally
 3. **No Rate Limits**: DuckDuckGo has no API limits
-4. **Customizable**: Use any model supported by LM Studio
+4. **Customizable**: Use any model supported by Ollama
 5. **Offline**: Works without internet connection (except for web search)
 6. **Fast**: No network latency for model inference
 
@@ -125,7 +125,7 @@ SEARCH_PROVIDER=duckduckgo
 ## Troubleshooting
 
 ### Connection Issues
-- Ensure LM Studio is running on the correct port
+- Ensure Ollama is running on the correct port
 - Check that the model is loaded and ready
 - Verify the URL in `LOCAL_MODEL_URL`
 
@@ -136,7 +136,7 @@ SEARCH_PROVIDER=duckduckgo
 
 ### Model Performance
 - Local models may be slower than OpenAI
-- Adjust model parameters in LM Studio for better performance
+- Adjust model parameters in Ollama for better performance
 - Consider using smaller, faster models for development
 
 ### Structured Output

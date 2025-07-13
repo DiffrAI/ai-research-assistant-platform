@@ -1,18 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { CreditCard, Check, Crown, Users, Zap, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Check } from 'lucide-react';
 import { paymentAPI } from '../services/api';
 import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
+import { useSearchParams } from 'react-router-dom';
 
 const Subscription = () => {
   const [plans, setPlans] = useState({});
   const [usage, setUsage] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuthStore();
+  const [searchParams] = useSearchParams();
+  const toastShownRef = useRef(false);
 
   useEffect(() => {
     fetchData();
-  }, []);
+    
+    // Handle URL parameters for success/cancel scenarios
+    const success = searchParams.get('success');
+    const canceled = searchParams.get('canceled');
+    const plan = searchParams.get('plan');
+    const price = searchParams.get('price');
+    const searches = searchParams.get('searches');
+    
+    if (!toastShownRef.current && (success === 'true' || canceled === 'true')) {
+      toastShownRef.current = true;
+      
+      if (success === 'true') {
+        if (plan && price && searches) {
+          const priceDisplay = price === '0' ? 'Free' : `$${price}`;
+          const searchesDisplay = searches === 'unlimited' ? 'Unlimited' : searches;
+          toast.success(`Successfully upgraded to ${plan} plan! Price: ${priceDisplay}, Searches: ${searchesDisplay}`);
+        } else {
+          toast.success('Payment successful! Your subscription has been updated.');
+        }
+      } else if (canceled === 'true') {
+        toast.error('Payment was canceled.');
+      }
+    }
+  }, [searchParams]);
 
   const fetchData = async () => {
     try {

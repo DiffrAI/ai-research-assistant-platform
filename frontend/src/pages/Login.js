@@ -30,7 +30,9 @@ const Login = () => {
         toast.error(result.error);
       }
     } else {
-      const result = await login(data);
+      // Only send email and password for login
+      const loginData = { email: data.email, password: data.password };
+      const result = await login(loginData);
       if (result.success) {
         toast.success('Login successful!');
         navigate('/');
@@ -39,6 +41,16 @@ const Login = () => {
       }
     }
   };
+
+  // Reset form fields when switching between register and login
+  useEffect(() => {
+    if (!isRegistering) {
+      // Clear full_name field when switching to login
+      if (document.querySelector('input[name="full_name"]')) {
+        document.querySelector('input[name="full_name"]').value = '';
+      }
+    }
+  }, [isRegistering]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">

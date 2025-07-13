@@ -89,7 +89,7 @@ class ChatService:
             "question": HumanMessage(content=request_params.question),
             "refined_question": "",
             "require_enhancement": False,
-            "questions": [],
+            "refined_questions": [],
             "search_results": [],
             "messages": [HumanMessage(content=request_params.question)],
         }

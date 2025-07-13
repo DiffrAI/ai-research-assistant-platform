@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8002';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 // Create axios instance
 const api = axios.create({
@@ -59,7 +59,7 @@ export const paymentAPI = {
 
 // Research API
 export const researchAPI = {
-  conductResearch: (researchData) => api.post('/api/v1/research/research', researchData),
+  conductResearch: (researchData) => api.post('/api/v1/research', researchData),
   streamResearch: (query, maxResults = 10) => 
     api.get('/api/v1/research/stream', { params: { query, max_results: maxResults } }),
   saveResearch: (researchData, tags) => 

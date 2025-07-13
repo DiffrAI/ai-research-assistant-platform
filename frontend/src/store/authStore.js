@@ -23,14 +23,16 @@ const useAuthStore = create(
         set({ isLoading: true, error: null });
         try {
           const response = await authAPI.login(credentials);
-          const { access_token, token_type } = response.data.data;
+          const { access_token } = response.data.data;
           
-          // Get user info
+          // Store token in localStorage first
+          localStorage.setItem('authToken', access_token);
+          
+          // Get user info with the token
           const userResponse = await authAPI.getCurrentUser();
           const user = userResponse.data.data;
           
-          // Store in localStorage
-          localStorage.setItem('authToken', access_token);
+          // Store user in localStorage
           localStorage.setItem('user', JSON.stringify(user));
           
           set({

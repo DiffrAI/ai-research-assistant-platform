@@ -1,4 +1,4 @@
-"""Local model client for LM Studio integration."""
+"""Local model client for Ollama integration."""
 
 from typing import Any, Dict, List, Optional
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
@@ -11,13 +11,15 @@ from app import settings
 
 
 class LocalModelClient:
-    """Client for interacting with local LM Studio model."""
+    """Client for interacting with local Ollama model."""
     
     def __init__(self):
+        logger.info(f"Initializing LocalModelClient with URL: {settings.LOCAL_MODEL_URL}/v1")
+        logger.info(f"Using model: {settings.LOCAL_MODEL_NAME}")
         self.client = ChatOpenAI(
             base_url=settings.LOCAL_MODEL_URL + "/v1",
-            api_key="not-needed",  # LM Studio doesn't require API key
-            model="local-model",  # Model name doesn't matter for local
+            api_key="not-needed",  # Ollama doesn't require API key
+            model=settings.LOCAL_MODEL_NAME,  # Use model name from config
             temperature=0.7,
             max_tokens=2000,
         )

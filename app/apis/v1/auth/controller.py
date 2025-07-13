@@ -2,12 +2,17 @@
 
 from datetime import datetime, timedelta
 from typing import Optional
+import json
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request, status, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.routing import APIRouter
+from pydantic import BaseModel
+from typing import Optional
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.responses import AppJSONResponse
+from app.core.database import get_db
 from app.models.user import UserCreate, User, Token, SubscriptionInfo
 from app.services.auth import auth_service
 
@@ -15,10 +20,13 @@ router = APIRouter()
 security = HTTPBearer()
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Optional[User]:
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+) -> Optional[User]:
     """Get current authenticated user."""
     token = credentials.credentials
-    user = auth_service.get_current_user(token)
+    user = await auth_service.get_current_user(token, db)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -40,15 +48,21 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     )
 
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
 @router.post("/register", response_model=User)
 async def register(
     request: Request,
     user_create: UserCreate,
+    db: AsyncSession = Depends(get_db),
 ):
     """Register a new user account."""
     
     # Check if user already exists
-    existing_user = await auth_service.get_user_by_email(user_create.email)
+    existing_user = await auth_service.get_user_by_email(user_create.email, db)
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -56,10 +70,10 @@ async def register(
         )
     
     # Create new user
-    user = await auth_service.create_user(user_create)
+    user = await auth_service.create_user(user_create, db)
     
     return AppJSONResponse(
-        data=User(
+        data=json.loads(User(
             id=user.id,
             email=user.email,
             full_name=user.full_name,
@@ -71,7 +85,7 @@ async def register(
             subscription_expires_at=user.subscription_expires_at,
             created_at=user.created_at,
             updated_at=user.updated_at
-        ).model_dump(),
+        ).model_dump_json()),
         message="User registered successfully",
         status_code=201
     )
@@ -80,39 +94,36 @@ async def register(
 @router.post("/login", response_model=Token)
 async def login(
     request: Request,
-    email: str,
-    password: str,
+    login: LoginRequest,
+    db: AsyncSession = Depends(get_db),
 ):
-    """Login with email and password."""
-    
+    email = login.email
+    password = login.password
     # Authenticate user
-    user = await auth_service.authenticate_user(email, password)
+    user = await auth_service.authenticate_user(email, password, db)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user"
         )
-    
     # Create access token
     access_token_expires = timedelta(minutes=auth_service.access_token_expire_minutes)
     access_token = auth_service.create_access_token(
         data={"sub": str(user.id), "email": user.email, "role": user.role.value},
         expires_delta=access_token_expires
     )
-    
     return AppJSONResponse(
-        data=Token(
+        data=json.loads(Token(
             access_token=access_token,
             token_type="bearer",
             expires_in=auth_service.access_token_expire_minutes * 60
-        ).model_dump(),
+        ).model_dump_json()),
         message="Login successful",
         status_code=200
     )
@@ -126,7 +137,7 @@ async def get_current_user_info(
     """Get current user information."""
     
     return AppJSONResponse(
-        data=current_user.model_dump(),
+        data=json.loads(current_user.model_dump_json()),
         message="User information retrieved successfully",
         status_code=200
     )

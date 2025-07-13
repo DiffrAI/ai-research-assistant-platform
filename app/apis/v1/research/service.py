@@ -75,21 +75,32 @@ class ResearchService:
         
         try:
             # Prepare initial input for agent execution
+            from langchain_core.messages import HumanMessage
+            
             state_input = {
-                "question": {"content": request.query, "type": "human"},
+                "question": HumanMessage(content=request.query),
                 "refined_question": "",
                 "require_enhancement": False,
-                "questions": [],
+                "refined_questions": [],
                 "search_results": [],
-                "messages": [{"content": request.query, "type": "human"}],
+                "messages": [HumanMessage(content=request.query)],
             }
 
             # Run the research workflow
-            final_state = await self._run_research_workflow(state_input, request.max_results)
+            final_state = await self._run_research_workflow(state_input, request.max_results, user_id)
             
             # Process results
             results = self._process_search_results(final_state.get("search_results", []))
-            summary = final_state.get("summary", "No summary available")
+            
+            # Extract summary from messages
+            messages = final_state.get("messages", [])
+            summary = "No summary available"
+            if messages and len(messages) > 0:
+                # Get the last AI message which should contain the summary
+                for message in reversed(messages):
+                    if hasattr(message, 'content') and message.content:
+                        summary = message.content
+                        break
             
             # Calculate search time
             search_time = time.time() - start_time
@@ -117,7 +128,7 @@ class ResearchService:
             logger.error(f"Error in research service: {e}")
             return None, f"Research failed: {str(e)}", 500
 
-    async def _run_research_workflow(self, state_input: Dict, max_results: int) -> Dict:
+    async def _run_research_workflow(self, state_input: Dict, max_results: int, user_id: str) -> Dict:
         """Run the research workflow using LangGraph."""
         
         # Override max results for this search
@@ -125,8 +136,13 @@ class ResearchService:
         self.websearch_executor.max_results = max_results
         
         try:
-            # Run the workflow
-            final_state = await self.graph.ainvoke(state_input)
+            # Run the workflow with configurable key for in-memory checkpointer
+            logger.info(f"Starting research workflow with input: {state_input}")
+            final_state = await self.graph.ainvoke(
+                state_input,
+                config={"configurable": {"thread_id": user_id}}
+            )
+            logger.info(f"Research workflow completed with final state keys: {list(final_state.keys())}")
             return final_state
         finally:
             # Restore original max results

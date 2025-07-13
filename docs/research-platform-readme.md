@@ -7,7 +7,7 @@ A powerful, cost-effective AI research platform that leverages local models and 
 ### **AI-Powered Research**
 - **Real-time web search** with DuckDuckGo (free) or Tavily
 - **AI-generated summaries** with citations
-- **Local model support** (LM Studio) or OpenAI fallback
+- **Local model support** (Ollama) or OpenAI fallback
 - **Citation management** and export functionality
 
 ### **Business Features**
@@ -18,7 +18,7 @@ A powerful, cost-effective AI research platform that leverages local models and 
 - **Rate limiting** and caching for optimization
 
 ### **Privacy & Cost Benefits**
-- **Zero AI costs** (local LM Studio models)
+- **Zero AI costs** (local Ollama models)
 - **Free web search** (DuckDuckGo integration)
 - **Privacy-focused** (local processing)
 - **No data sent to third parties**
@@ -48,17 +48,17 @@ PORT=8002
 
 # Model Configuration - Use Local Model (Free)
 USE_LOCAL_MODEL=true
-LOCAL_MODEL_URL=http://127.0.0.1:1234
+LOCAL_MODEL_URL=http://127.0.0.1:11434
 
 # Search Provider Configuration - Use DuckDuckGo (Free)
 SEARCH_PROVIDER=duckduckgo
 DUCKDUCKGO_MAX_RESULTS=10
 ```
 
-### **3. Start LM Studio**
-- Open LM Studio
-- Load your preferred model
-- Start server on `http://127.0.0.1:1234`
+### **3. Start Ollama**
+- Install Ollama from https://ollama.ai
+- Pull your preferred model: `ollama pull qwen2.5:7b`
+- Start server on `http://127.0.0.1:11434`
 
 ### **4. Run the Application**
 ```bash
@@ -153,7 +153,7 @@ curl "http://localhost:8002/api/v1/research/trending"
 
 ### **Backend Stack**
 - **Framework**: FastAPI + Python
-- **AI Models**: Local LM Studio + OpenAI fallback
+- **AI Models**: Local Ollama + OpenAI fallback
 - **Search**: DuckDuckGo + Tavily fallback
 - **Caching**: Redis
 - **Deployment**: Docker + Docker Compose

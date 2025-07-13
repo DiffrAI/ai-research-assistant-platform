@@ -3,14 +3,19 @@
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
-import stripe
 from loguru import logger
 
 from app import settings
 from app.models.user import SubscriptionPlan, get_subscription_limits
 
-# Configure Stripe
-stripe.api_key = settings.STRIPE_SECRET_KEY
+# Configure Stripe only if keys are provided
+if settings.STRIPE_SECRET_KEY:
+    import stripe
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    USE_STRIPE = True
+else:
+    USE_STRIPE = False
+    logger.warning("Stripe keys not configured. Using mock payment service for development.")
 
 
 class PaymentService:
@@ -23,6 +28,10 @@ class PaymentService:
 
     async def create_customer(self, email: str, name: str) -> Optional[str]:
         """Create a Stripe customer."""
+        if not USE_STRIPE:
+            # Return mock customer ID for development
+            return f"cus_mock_{email.replace('@', '_').replace('.', '_')}"
+        
         try:
             customer = stripe.Customer.create(
                 email=email,
@@ -106,6 +115,14 @@ class PaymentService:
         cancel_url: str
     ) -> Optional[str]:
         """Create a Stripe checkout session."""
+        if not USE_STRIPE:
+            # Return mock checkout URL for development
+            plan_limits = get_subscription_limits(plan)
+            searches_display = "unlimited" if plan_limits['searches_limit'] == -1 else str(plan_limits['searches_limit'])
+            mock_url = f"{success_url}&plan={plan.value}&price={plan_limits['price']}&searches={searches_display}"
+            logger.info(f"Mock checkout session created: {mock_url}")
+            return mock_url
+        
         try:
             plan_limits = get_subscription_limits(plan)
             price_id = await self._get_or_create_price_id(plan, plan_limits["price"])
@@ -133,6 +150,12 @@ class PaymentService:
 
     async def create_portal_session(self, customer_id: str, return_url: str) -> Optional[str]:
         """Create a customer portal session for subscription management."""
+        if not USE_STRIPE:
+            # Return mock portal URL for development
+            mock_url = f"{return_url}&mock_portal=true"
+            logger.info(f"Mock portal session created: {mock_url}")
+            return mock_url
+        
         try:
             session = stripe.billing_portal.Session.create(
                 customer=customer_id,

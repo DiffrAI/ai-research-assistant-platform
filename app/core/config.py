@@ -54,12 +54,13 @@ class AppConfig(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8002
     WORKER_COUNT: Union[int, None] = None
+    DEBUG: bool = True
 
     # Cache
     CACHE_BACKEND: CacheBackend = CacheBackend.LOCAL
 
     # Rate Limit
-    RATE_LIMIT_BACKEND: RateLimitBackend = RateLimitBackend.REDIS
+    RATE_LIMIT_BACKEND: RateLimitBackend = RateLimitBackend.LOCAL
 
     # Redis
     REDIS_HOST: str = ""
@@ -70,13 +71,19 @@ class AppConfig(BaseSettings):
     OPENAI_API_KEY: str = ""
     TAVILY_API_KEY: str = ""
 
-    # Local Model (LM Studio)
-    LOCAL_MODEL_URL: str = "http://127.0.0.1:1234"
+    # Local Model (Ollama)
+    LOCAL_MODEL_URL: str = "http://127.0.0.1:11434"  # Default to Ollama
     USE_LOCAL_MODEL: bool = False  # Default to OpenAI, can be overridden
+    LOCAL_MODEL_NAME: str = "qwen2.5:7b"  # Default model name for local model
 
     # Search Provider Configuration
     SEARCH_PROVIDER: str = "duckduckgo"  # "duckduckgo" or "tavily"
     DUCKDUCKGO_MAX_RESULTS: int = 10
+    
+    # Search Retry Configuration
+    SEARCH_MAX_RETRIES: int = 5  # Maximum number of retries for search operations
+    SEARCH_BASE_DELAY: float = 1.0  # Base delay for exponential backoff (seconds)
+    SEARCH_MAX_DELAY: float = 10.0  # Maximum delay for exponential backoff (seconds)
 
     # Authentication & Security
     SECRET_KEY: str = "your-secret-key-change-in-production"
@@ -90,7 +97,7 @@ class AppConfig(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str = ""
 
     # Database (for user management)
-    DATABASE_URL: str = "sqlite:///./ai_research.db"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./ai_research.db"
 
     # LangFuse
     LANGFUSE_HOST: str = ""

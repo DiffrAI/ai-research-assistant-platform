@@ -11,14 +11,14 @@ health_router = APIRouter()
 @health_router.get(
     "/health",
     response_class=AppJSONResponse,
-    summary="Root",
-    description="Endpoint of service (/)",
-    response_description="JSON response indicating the root message of the service.",
+    summary="Health Check",
+    description="Check the health status of the AI Research Assistant Platform API",
+    response_description="JSON response with service status and version information.",
 )
-async def root():
-    """Endpoint for root."""
+async def health_check():
+    """Health check endpoint for the AI Research Assistant Platform."""
     return AppJSONResponse(
-        data={"message": "FastAPI Boilerplate", "version": settings.RELEASE_VERSION},
+        data={"message": "AI Research Assistant Platform", "version": settings.RELEASE_VERSION},
         message="Service root endpoint",
         status="success",
         status_code=200,
