@@ -4,7 +4,7 @@ import { authAPI } from '../services/api';
 
 const useAuthStore = create(
   persist(
-    (set, get) => ({
+    (set) => ({
       // State
       user: null,
       token: null,

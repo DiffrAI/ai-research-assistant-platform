@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, Mail, Lock, User, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -8,14 +8,13 @@ import useAuthStore from '../store/authStore';
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
-  const { login, register, isLoading, error, clearError } = useAuthStore();
+  const { login, register, isLoading, clearError } = useAuthStore();
   const navigate = useNavigate();
 
   const {
     register: registerField,
     handleSubmit,
     formState: { errors },
-    watch,
   } = useForm();
 
   const onSubmit = async (data) => {
@@ -75,7 +74,7 @@ const Login = () => {
               </>
             ) : (
               <>
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <button
                   onClick={() => setIsRegistering(true)}
                   className="font-medium text-primary-600 hover:text-primary-500"

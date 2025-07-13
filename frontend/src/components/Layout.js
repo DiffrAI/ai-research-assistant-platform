@@ -9,8 +9,7 @@ import {
   Menu, 
   X,
   BookOpen,
-  TrendingUp,
-  Settings
+  TrendingUp
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Loader2, Save, Download, ExternalLink, Copy, Check } from 'lucide-react';
+import { Search, Loader2, Save, Download, ExternalLink, Copy } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { researchAPI } from '../services/api';
