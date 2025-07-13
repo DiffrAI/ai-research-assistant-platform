@@ -12,15 +12,12 @@ def test_research_unauthenticated():
         response = client.post(
             "/api/v1/research", json={"query": "What is the latest news about AI?"}
         )
-        # Should get 422 validation error because authentication is required
-        assert response.status_code == 422
+        # Should get 403 forbidden because authentication is required
+        assert response.status_code == 403
         data = response.json()
         assert data["status"] == "success" or data["status"] == "error"
-        # Check for validation error message
-        assert (
-            "validation" in data["message"].lower()
-            or "error" in data["message"].lower()
-        )
+        # Check for 'not authenticated' message
+        assert "not authenticated" in data["message"].lower()
 
 
 # To test authenticated requests, you would need to:
