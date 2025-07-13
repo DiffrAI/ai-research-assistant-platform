@@ -1,12 +1,12 @@
-"""Response module for application-level API responses."""
+"""Enhanced response module for application-level API responses."""
 
-from typing import Any, Literal
+from typing import Any, Dict, Literal, Optional
 
 from fastapi.responses import JSONResponse
 
 
 class AppJSONResponse(JSONResponse):
-    """Custom JSON response structure for the entire application.
+    """Enhanced JSON response structure for the entire application.
 
     This class standardizes all API responses to follow a consistent structure,
     making it easier for frontend clients and developers to interpret results.
@@ -17,25 +17,38 @@ class AppJSONResponse(JSONResponse):
         data: Any = None,
         message: str = "Success",
         status: Literal["success", "error"] = "success",
-        error: str | dict | None = None,
+        error: Optional[str | Dict[str, Any]] = None,
+        error_code: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
         status_code: int = 200,
     ):
-        """Initializes the AppJSONResponse.
+        """Initialize the AppJSONResponse with enhanced error handling.
 
         Args:
-            data (Any, optional): The actual payload to return in the 'data' key. Defaults to None.
-            message (str, optional): A human-readable message describing the result. Defaults to "Success".
-            status (Literal, optional): Status of the response; typically 'success' or 'error'. Defaults to "success".
-            error (Union[str, dict], optional): Optional error details, either a string or a dictionary. Defaults to None.
-            status_code (int, optional): HTTP status code for the response. Defaults to 200.
-
+            data: The actual payload to return in the 'data' key
+            message: A human-readable message describing the result
+            status: Status of the response; typically 'success' or 'error'
+            error: Optional error details, either a string or a dictionary
+            error_code: Optional error code for programmatic error handling
+            details: Optional additional details or metadata
+            status_code: HTTP status code for the response
         """
         content = {
             "status": status,
             "message": message,
             "data": data,
-            "error": error,
         }
+        
+        # Add error information if present
+        if error is not None:
+            content["error"] = error
+            
+        if error_code is not None:
+            content["error_code"] = error_code
+            
+        if details is not None:
+            content["details"] = details
+
         super().__init__(
             content=content,
             status_code=status_code,
