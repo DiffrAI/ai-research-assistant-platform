@@ -3,7 +3,7 @@
 import enum
 from typing import Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -286,7 +286,8 @@ class AppConfig(BaseSettings):
     def LANGFUSE_SECRET_KEY(self) -> str:
         return self.langfuse_secret_key
 
-    @validator("worker_count", pre=True)
+    @field_validator("worker_count", mode="before")
+    @classmethod
     def validate_worker_count(cls, v):
         """Validate worker count based on environment."""
         if v is None:
@@ -294,10 +295,11 @@ class AppConfig(BaseSettings):
             return multiprocessing.cpu_count() * 2 + 1
         return v
 
-    @validator("secret_key")
+    @field_validator("security")
+    @classmethod
     def validate_secret_key(cls, v):
         """Ensure secret key is changed in production."""
-        if v == "your-secret-key-change-in-production":
+        if v.secret_key == "your-secret-key-change-in-production":
             import os
             if os.getenv("ENVIRONMENT") == "production":
                 raise ValueError("SECRET_KEY must be changed in production")

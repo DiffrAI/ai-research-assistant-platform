@@ -128,7 +128,10 @@ class ServiceUnavailableError(CustomError):
     """Raised when an external service is unavailable."""
     
     def __init__(self, message: str = "Service temporarily unavailable", service: Optional[str] = None, **kwargs):
-        details = {"service": service} if service else {}
+        # Merge details from kwargs and service
+        details = kwargs.pop("details", {}) or {}
+        if service:
+            details = {**details, "service": service}
         super().__init__(
             message=message,
             status_code=503,
