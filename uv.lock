@@ -12,7 +12,7 @@ resolution-markers = [
 [[package]]
 name = "ai-research-assistant-platform"
 version = "0.0.1"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "aiocache" },
     { name = "aiosqlite" },
