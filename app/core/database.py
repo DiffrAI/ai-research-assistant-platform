@@ -52,10 +52,10 @@ async def init_db() -> None:
 
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)
-        
+
         # Handle migration for existing databases
         await migrate_add_stripe_customer_id(conn)
-        
+
         logger.info("Database tables created successfully")
 
 
@@ -63,13 +63,11 @@ async def migrate_add_stripe_customer_id(conn) -> None:
     """Add stripe_customer_id column if it doesn't exist."""
     try:
         # Check if stripe_customer_id column exists
-        result = await conn.execute(
-            "PRAGMA table_info(users)"
-        )
+        result = await conn.execute("PRAGMA table_info(users)")
         columns = result.fetchall()
         column_names = [col[1] for col in columns]
-        
-        if 'stripe_customer_id' not in column_names:
+
+        if "stripe_customer_id" not in column_names:
             await conn.execute(
                 "ALTER TABLE users ADD COLUMN stripe_customer_id VARCHAR"
             )

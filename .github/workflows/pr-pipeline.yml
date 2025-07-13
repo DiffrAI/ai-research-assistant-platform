@@ -32,7 +32,7 @@ jobs:
           version: latest
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --extra dev
 
       - name: Run linting
         run: uv run ruff check . --output-format=github
@@ -61,7 +61,7 @@ jobs:
           version: latest
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --extra dev
 
       - name: Run type checking
         run: uv run mypy app/ --show-error-codes
@@ -84,7 +84,7 @@ jobs:
           version: latest
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --extra dev
 
       - name: Run bandit security scan
         run: uv run bandit -r app/ -f json -o bandit-report.json || true
@@ -121,7 +121,7 @@ jobs:
           version: latest
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --extra dev
 
       - name: Create test environment
         run: |
@@ -305,7 +305,7 @@ jobs:
           version: latest
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --extra dev
 
       - name: Create test environment
         run: |
@@ -346,7 +346,7 @@ jobs:
           version: latest
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --extra dev
 
       - name: Run complexity analysis
         run: |
