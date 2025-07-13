@@ -71,7 +71,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 body_bytes = await request.body()
                 body_text = body_bytes.decode("utf-8", errors="ignore").strip()
                 logger.debug(
-                    f"📥 Request: {request.method} {request.url.path} | Body: {body_text or 'empty'}"
+                    f"📥 Request: {request.method} {request.url.path} | Body: {body_text or 'empty'}",
                 )
 
             # Process the request
@@ -79,7 +79,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
         except Exception as e:
             logger.exception(
-                f"❌ Error while processing {request.method} {request.url.path}: {str(e)}"
+                f"❌ Error while processing {request.method} {request.url.path}: {e!s}",
             )
             raise
 

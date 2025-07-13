@@ -1,7 +1,6 @@
 """Configuration settings for the application"""
 
 import enum
-from typing import Union
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -45,7 +44,7 @@ class AppConfig(BaseSettings):
     """Primary configuration settings for the application."""
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", extra="ignore",
     )
 
     LOG_LEVEL: LogLevel = LogLevel.TRACE
@@ -53,7 +52,7 @@ class AppConfig(BaseSettings):
     ENVIRONMENT: AppEnvs = AppEnvs.DEVELOPMENT
     HOST: str = "0.0.0.0"
     PORT: int = 8002
-    WORKER_COUNT: Union[int, None] = None
+    WORKER_COUNT: int | None = None
     DEBUG: bool = True
 
     # Cache
@@ -79,7 +78,7 @@ class AppConfig(BaseSettings):
     # Search Provider Configuration
     SEARCH_PROVIDER: str = "duckduckgo"  # "duckduckgo" or "tavily"
     DUCKDUCKGO_MAX_RESULTS: int = 10
-    
+
     # Search Retry Configuration
     SEARCH_MAX_RETRIES: int = 5  # Maximum number of retries for search operations
     SEARCH_BASE_DELAY: float = 1.0  # Base delay for exponential backoff (seconds)

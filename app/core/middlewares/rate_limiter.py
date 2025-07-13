@@ -21,7 +21,6 @@ async def token_or_ip_key(request: Request) -> str:
 
 async def init_rate_limiter():
     """Initialize FastAPI rate limiter with local or Redis backend."""
-
     if settings.RATE_LIMIT_BACKEND == RateLimitBackend.LOCAL:
         fake_redis = fakeredis.aioredis.FakeRedis()
         await FastAPILimiter.init(redis=fake_redis, identifier=token_or_ip_key)
@@ -36,5 +35,5 @@ async def init_rate_limiter():
 
     else:
         raise ValueError(
-            f"Unsupported RATE_LIMIT_BACKEND: {settings.RATE_LIMIT_BACKEND}"
+            f"Unsupported RATE_LIMIT_BACKEND: {settings.RATE_LIMIT_BACKEND}",
         )

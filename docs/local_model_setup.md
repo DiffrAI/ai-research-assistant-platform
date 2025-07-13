@@ -10,10 +10,14 @@ Add these settings to your `.env` file:
 # Model Configuration
 USE_LOCAL_MODEL=true
 LOCAL_MODEL_URL=http://127.0.0.1:11434
+LOCAL_MODEL_NAME=qwen2.5:7b  # Must match the model loaded in Ollama
 
 # Search Provider Configuration
 SEARCH_PROVIDER=duckduckgo  # "duckduckgo" or "tavily"
 DUCKDUCKGO_MAX_RESULTS=10
+SEARCH_MAX_RETRIES=3         # Number of retries for DuckDuckGo search
+SEARCH_BASE_DELAY=1.0        # Base delay (seconds) for exponential backoff
+SEARCH_MAX_DELAY=10.0        # Max delay (seconds) for exponential backoff
 
 # OpenAI Configuration (used when USE_LOCAL_MODEL=false)
 OPENAI_API_KEY=your_openai_api_key_here
@@ -28,6 +32,7 @@ TAVILY_API_KEY=your_tavily_api_key_here
 - Install Ollama from https://ollama.ai
 - Pull your preferred model: `ollama pull qwen2.5:7b`
 - Start Ollama server (runs automatically on `http://127.0.0.1:11434`)
+- Make sure the model name in `LOCAL_MODEL_NAME` matches the model you have loaded in Ollama (e.g., `qwen2.5:7b`).
 
 ### 2. Configure Environment
 Create a `.env` file in the project root:
@@ -42,10 +47,14 @@ PORT=8002
 # Model Configuration
 USE_LOCAL_MODEL=true
 LOCAL_MODEL_URL=http://127.0.0.1:11434
+LOCAL_MODEL_NAME=qwen2.5:7b
 
 # Search Provider Configuration
 SEARCH_PROVIDER=duckduckgo
 DUCKDUCKGO_MAX_RESULTS=10
+SEARCH_MAX_RETRIES=3
+SEARCH_BASE_DELAY=1.0
+SEARCH_MAX_DELAY=10.0
 
 # Optional: Tavily (if you want to switch back)
 TAVILY_API_KEY=your_tavily_api_key_here
@@ -77,6 +86,7 @@ curl "http://localhost:8002/api/v1/chat/websearch?question=What%20is%20Python%20
 ```env
 USE_LOCAL_MODEL=true
 LOCAL_MODEL_URL=http://127.0.0.1:11434
+LOCAL_MODEL_NAME=qwen2.5:7b
 SEARCH_PROVIDER=duckduckgo
 ```
 
@@ -93,6 +103,7 @@ TAVILY_API_KEY=your_tavily_api_key_here
 # Local model with Tavily search
 USE_LOCAL_MODEL=true
 LOCAL_MODEL_URL=http://127.0.0.1:11434
+LOCAL_MODEL_NAME=qwen2.5:7b
 SEARCH_PROVIDER=tavily
 TAVILY_API_KEY=your_tavily_api_key_here
 
@@ -100,6 +111,17 @@ TAVILY_API_KEY=your_tavily_api_key_here
 USE_LOCAL_MODEL=false
 OPENAI_API_KEY=your_openai_api_key_here
 SEARCH_PROVIDER=duckduckgo
+```
+
+## DuckDuckGo Retry Logic (Web Search)
+
+- The system includes robust retry logic and exponential backoff for DuckDuckGo web search.
+- You can configure the retry behavior in your `.env`:
+
+```env
+SEARCH_MAX_RETRIES=3         # Number of retries for DuckDuckGo search
+SEARCH_BASE_DELAY=1.0        # Base delay (seconds) for exponential backoff
+SEARCH_MAX_DELAY=10.0        # Max delay (seconds) for exponential backoff
 ```
 
 ## Benefits of Free Setup (Local Model + DuckDuckGo)
@@ -128,9 +150,11 @@ SEARCH_PROVIDER=duckduckgo
 - Ensure Ollama is running on the correct port
 - Check that the model is loaded and ready
 - Verify the URL in `LOCAL_MODEL_URL`
+- Ensure `LOCAL_MODEL_NAME` matches the model loaded in Ollama
 
 ### Search Issues
 - DuckDuckGo may occasionally have rate limiting
+- Retry logic is built-in and configurable
 - Try switching to Tavily if you need more reliable search
 - Check internet connection for web search functionality
 

@@ -19,7 +19,7 @@ def trace(name: str = "", log_args: bool = True, log_result: bool = True):
             """Format function arguments for logging."""
             try:
                 return json.dumps(
-                    {"args": [str(a) for a in args], "kwargs": kwargs}, default=str
+                    {"args": [str(a) for a in args], "kwargs": kwargs}, default=str,
                 )
             except Exception:
                 return "[Unserializable]"

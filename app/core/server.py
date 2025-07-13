@@ -1,6 +1,5 @@
 """Primary application entry point for AI Research Assistant Platform."""
 
-from typing import List
 
 from fastapi import FastAPI
 from fastapi.middleware import Middleware
@@ -14,7 +13,7 @@ from app.core.lifespan import lifespan
 from app.core.middlewares import LoggingMiddleware
 
 
-def configure_middleware() -> List[Middleware]:
+def configure_middleware() -> list[Middleware]:
     """Define and return middleware settings."""
     return [
         Middleware(

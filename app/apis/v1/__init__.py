@@ -2,11 +2,11 @@
 
 from fastapi import APIRouter
 
+from .auth.controller import router as auth_router
 from .chat.controller import router as chat_router
+from .payment.controller import router as payment_router
 from .research import research_api
 from .user.controller import router as user_router
-from .auth.controller import router as auth_router
-from .payment.controller import router as payment_router
 
 # Define and configure versioned API routers
 v1_routers = APIRouter()

@@ -1,6 +1,6 @@
 """Response module for application-level API responses."""
 
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 
 from fastapi.responses import JSONResponse
 
@@ -17,7 +17,7 @@ class AppJSONResponse(JSONResponse):
         data: Any = None,
         message: str = "Success",
         status: Literal["success", "error"] = "success",
-        error: Optional[Union[str, dict]] = None,
+        error: str | dict | None = None,
         status_code: int = 200,
     ):
         """Initializes the AppJSONResponse.
@@ -28,6 +28,7 @@ class AppJSONResponse(JSONResponse):
             status (Literal, optional): Status of the response; typically 'success' or 'error'. Defaults to "success".
             error (Union[str, dict], optional): Optional error details, either a string or a dictionary. Defaults to None.
             status_code (int, optional): HTTP status code for the response. Defaults to 200.
+
         """
         content = {
             "status": status,

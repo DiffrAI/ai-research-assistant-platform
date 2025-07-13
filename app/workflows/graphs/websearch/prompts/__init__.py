@@ -14,8 +14,7 @@ def load_prompt(prompt_filename: str) -> str:
         raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
 
     try:
-        raw_prompt = prompt_path.read_text(encoding="utf-8")
-        return raw_prompt
+        return prompt_path.read_text(encoding="utf-8")
 
     except Exception:
         logger.critical("Failed to load or format the prompt.", exc_info=True)

@@ -1,1 +1,1 @@
-"""Payment API module.""" 
+"""Payment API module."""

@@ -3,7 +3,7 @@
 from typing import Any
 
 
-class CustomException(Exception):
+class CustomError(Exception):
     """Custom exception with detailed attributes."""
 
     def __init__(

@@ -66,5 +66,5 @@ class WebSearchAgentGraph:
     def compile(self):
         """Compile the LangGraph workflow with checkpointer."""
         return self.workflow.compile(checkpointer=checkpointer).with_config(
-            {"callbacks": [langfuse_handler]}
+            {"callbacks": [langfuse_handler]},
         )

@@ -1,7 +1,6 @@
 """Answer generation component using web search content and rephrased user question."""
 
 from datetime import datetime
-from typing import Dict, List
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
@@ -9,10 +8,10 @@ from langgraph.config import get_stream_writer
 from loguru import logger
 
 from app import settings
-from ..local_model_client import LocalModelClient
-from ..model_map import LLMModelMap
-from ..prompts import RAG_PROMPT, SYSTEM_PROMPT
-from ..states import AgentState
+from app.workflows.graphs.websearch.local_model_client import LocalModelClient
+from app.workflows.graphs.websearch.model_map import LLMModelMap
+from app.workflows.graphs.websearch.prompts import RAG_PROMPT, SYSTEM_PROMPT
+from app.workflows.graphs.websearch.states import AgentState
 
 
 class AnswerGenerator:
@@ -29,9 +28,8 @@ class AnswerGenerator:
                 api_key=SecretStr(settings.OPENAI_API_KEY),
             )
 
-    def generate(self, state: AgentState) -> Dict[str, List[AIMessage]]:
+    def generate(self, state: AgentState) -> dict[str, list[AIMessage]]:
         """Generates an answer using retrieved web content and the user's refined question."""
-
         web_results = state["search_results"]
         result_blocks = {}
         combined_content = ""
@@ -52,7 +50,7 @@ class AnswerGenerator:
         writer({"citation_map": result_blocks})
 
         rag_prompt = RAG_PROMPT.format(
-            context=combined_content, question=state["question"].content
+            context=combined_content, question=state["question"].content,
         )
         logger.debug(f"Aggregated content for answer generation:\n{rag_prompt}")
 
@@ -62,14 +60,14 @@ class AnswerGenerator:
             0,
             SystemMessage(
                 content=SYSTEM_PROMPT.format(
-                    current_date_and_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                )
+                    current_date_and_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                ),
             ),
         )
         conversation.append(HumanMessage(content=rag_prompt))
 
         logger.info(f"Generating answer with {'local' if settings.USE_LOCAL_MODEL else 'OpenAI'} model...")
-        
+
         if settings.USE_LOCAL_MODEL:
             answer_content = self.llm.invoke(conversation)
         else:

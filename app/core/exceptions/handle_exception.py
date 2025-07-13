@@ -7,7 +7,7 @@ from fastapi.exceptions import HTTPException, RequestValidationError
 from loguru import logger
 
 from app.constants import messages
-from app.core.exceptions import CustomException
+from app.core.exceptions import CustomError
 from app.core.responses import AppJSONResponse
 
 
@@ -25,8 +25,8 @@ class HandleExceptions:
     def _handle_custom_exception(self):
         """Handle custom exceptions."""
 
-        @self.app.exception_handler(CustomException)
-        async def custom_exception_handler(request: Request, exc: CustomException):
+        @self.app.exception_handler(CustomError)
+        async def custom_exception_handler(request: Request, exc: CustomError):
             return await self._create_json_response(
                 status_code=exc.status_code,
                 message=exc.message,
@@ -38,9 +38,7 @@ class HandleExceptions:
         """Handle Pydantic validation errors."""
 
         @self.app.exception_handler(RequestValidationError)
-        async def pydantic_exception_handler(
-            request: Request, exc: RequestValidationError
-        ):
+        async def pydantic_exception_handler(request: Request, exc: RequestValidationError):
             return await self._create_json_response(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 message=messages.PYDANTIC_VALIDATION_ERROR,
@@ -63,7 +61,7 @@ class HandleExceptions:
                 )
 
             return await self._create_json_response(
-                status_code=exc.status_code, message=exc.detail
+                status_code=exc.status_code, message=exc.detail,
             )
 
     def _handle_default_exception(self):
@@ -74,14 +72,15 @@ class HandleExceptions:
             return await self._create_json_response(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 message=messages.INTERNAL_SERVER_ERROR,
+                error_log=str(exc),
             )
 
     async def _create_json_response(
-        self, status_code: int, message: str, payload: Any = None, error_log: Any = None
+        self, status_code: int, message: str, payload: Any = None, error_log: Any = None,
     ) -> AppJSONResponse:
         """Create a JSON response for exceptions with centralized logging."""
         if error_log:
             logger.error(error_log)
         return AppJSONResponse(
-            data=payload, message=message, status_code=status_code, error=error_log
+            data=payload, message=message, status_code=status_code, error=error_log,
         )

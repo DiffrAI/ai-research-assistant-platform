@@ -61,7 +61,7 @@ docker-compose up --build
    - ✅ User registration and login APIs
    - ✅ Chat endpoint (streaming)
    - ✅ Payment endpoints
-   - ✅ Research endpoints (with some configuration issues)
+   - ✅ Research endpoints (with robust web search and local LLM integration)
 
 2. **Database**
    - ✅ SQLite database (`ai_research.db`)
@@ -84,9 +84,8 @@ docker-compose up --build
    - ⚠️ Kill existing processes if needed
 
 2. **Research Service**
-   - ⚠️ LangGraph workflow configuration issues
-   - ⚠️ Missing LangFuse environment variables
-   - ⚠️ Research endpoint returns configuration errors
+   - ⚠️ Ensure Ollama is running and the correct model is loaded (see docs/local_model_setup.md)
+   - ⚠️ DuckDuckGo may occasionally rate limit; robust retry logic is built-in and configurable
 
 ## 🔧 API Testing
 
@@ -163,7 +162,7 @@ fastapi-genai-boilerplate/
 
 ## 🔑 Environment Variables
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory. See [`docs/envs.md`](docs/envs.md) and [`docs/example.env`](docs/example.env) for a full list and details.
 
 ```env
 # Database
@@ -172,9 +171,23 @@ DATABASE_URL=sqlite+aiosqlite:///./ai_research.db
 # Security
 SECRET_KEY=your-secret-key-change-in-production
 
-# AI Services
-OPENAI_API_KEY=your-openai-key
-TAVILY_API_KEY=your-tavily-key
+# Local Model (Ollama)
+USE_LOCAL_MODEL=true
+LOCAL_MODEL_URL=http://127.0.0.1:11434
+LOCAL_MODEL_NAME=qwen2.5:7b  # Must match the model loaded in Ollama
+
+# Web Search (DuckDuckGo)
+SEARCH_PROVIDER=duckduckgo
+DUCKDUCKGO_MAX_RESULTS=10
+SEARCH_MAX_RETRIES=3         # Number of retries for DuckDuckGo search
+SEARCH_BASE_DELAY=1.0        # Base delay (seconds) for exponential backoff
+SEARCH_MAX_DELAY=10.0        # Max delay (seconds) for exponential backoff
+
+# Optional: OpenAI (if not using local model)
+# OPENAI_API_KEY=your-openai-key
+
+# Optional: Tavily (if you want to use Tavily search)
+# TAVILY_API_KEY=your-tavily-key
 
 # Payment (Stripe)
 STRIPE_SECRET_KEY=your-stripe-secret
@@ -185,6 +198,18 @@ LANGFUSE_HOST=your-langfuse-host
 LANGFUSE_PUBLIC_KEY=your-langfuse-public-key
 LANGFUSE_SECRET_KEY=your-langfuse-secret-key
 ```
+
+## 🌐 Local Model Setup (Ollama)
+
+- Ollama is the only supported local LLM backend. LM Studio is not supported.
+- See [`docs/local_model_setup.md`](docs/local_model_setup.md) for full instructions.
+- Make sure `LOCAL_MODEL_NAME` matches the model you have loaded in Ollama (e.g., `qwen2.5:7b`).
+
+## 🌍 Web Search Integration
+
+- DuckDuckGo is the default and recommended web search provider.
+- Robust retry logic and exponential backoff are built-in and configurable via `.env`.
+- See [`docs/local_model_setup.md`](docs/local_model_setup.md) for details and troubleshooting.
 
 ## 🚨 Troubleshooting
 
@@ -216,20 +241,60 @@ rm ai_research.db
 python main.py
 ```
 
+### Local Model Issues
+- Ensure Ollama is running on `LOCAL_MODEL_URL` (default: `http://127.0.0.1:11434`)
+- Ensure the model name in `LOCAL_MODEL_NAME` matches the model loaded in Ollama
+- See [`docs/local_model_setup.md`](docs/local_model_setup.md) for more
+
+### Web Search Issues
+- DuckDuckGo is robust but may occasionally rate limit; retry logic is built-in
+- Adjust `SEARCH_MAX_RETRIES`, `SEARCH_BASE_DELAY`, and `SEARCH_MAX_DELAY` in `.env` as needed
+- For more reliable/structured search, you can switch to Tavily (paid)
+
+## 🚀 CI/CD Pipeline
+
+This project includes a comprehensive CI/CD pipeline that runs on every push to the main branch.
+
+### Pipeline Features
+- ✅ **Multi-Python Testing**: Tests on Python 3.11 and 3.12
+- ✅ **Code Quality**: Linting with Ruff, type checking with MyPy
+- ✅ **Security**: Bandit for security checks, Safety for dependency vulnerabilities
+- ✅ **Coverage**: Test coverage reporting with pytest-cov
+- ✅ **Build Verification**: Package building and Docker image testing
+- ✅ **Pre-commit Hooks**: Local checks before commits
+
+### Local Development
+```bash
+# Run all CI checks locally
+make ci
+
+# Run individual checks
+make lint          # Linting
+make type-check    # Type checking
+make test          # Tests with coverage
+make security-check # Security checks
+make build         # Build package
+
+# Install pre-commit hooks
+make pre-commit
+
+# Run pre-commit on all files
+make pre-commit-run
+```
+
+### CI/CD Configuration Files
+- `.github/workflows/ci.yml` - GitHub Actions workflow
+- `ruff.toml` - Ruff linting configuration
+- `mypy.ini` - MyPy type checking configuration
+- `.bandit` - Bandit security configuration
+- `.pre-commit-config.yaml` - Pre-commit hooks configuration
+- `Makefile` - Local development commands
+
 ## 📚 API Documentation
 
 Once the backend is running, visit:
 - Swagger UI: http://localhost:8002/docs
 - ReDoc: http://localhost:8002/redoc
-
-## 🎯 Next Steps
-
-1. Fix frontend startup issues
-2. Configure LangFuse for research service
-3. Add proper error handling for research workflows
-4. Implement saved research functionality
-5. Add analytics and trending topics
-6. Set up proper environment variables
 
 ## 📄 License
 

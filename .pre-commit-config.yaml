@@ -1,48 +1,54 @@
 repos:
-  - repo: https://github.com/psf/black
-    rev: "25.1.0"
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
     hooks:
-      - id: black
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-json
+      - id: check-toml
+      - id: debug-statements
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.16.0"
-    hooks:
-      - id: mypy
-
-  - repo: https://github.com/pre-commit/mirrors-isort
-    rev: "v5.10.1"
-    hooks:
-      - id: isort
-
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.11.13"
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.0
     hooks:
       - id: ruff
+        args: [--fix]
+      - id: ruff-format
 
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v5.0.0"
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.16.0
     hooks:
-      - id: check-ast
-      - id: check-yaml
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
+      - id: mypy
+        additional_dependencies: [types-all]
+        args: [--ignore-missing-imports]
 
   - repo: local
     hooks:
       - id: pytest
-        name: Run pytest tests
-        entry: bash
+        name: pytest
+        entry: pytest
         language: system
-        types: [python]
-        verbose: true
-        args:
-          - -c
-          - |
-            echo "🔍 Collecting test files..."
-            if ls tests/test_*.py >/dev/null 2>&1; then
-              echo "✅ Found test files. Running pytest..."
-              uv run pytest --disable-warnings
-            else
-              echo "⚠️  No test files found. Skipping pytest run."
-              exit 0
-            fi
+        pass_filenames: false
+        always_run: true
+        args: [tests/]
+
+      - id: bandit
+        name: bandit
+        entry: bandit
+        language: system
+        pass_filenames: false
+        always_run: true
+        args: [-r, app/, -f, json, -o, bandit-report.json]
+
+      - id: safety
+        name: safety
+        entry: safety
+        language: system
+        pass_filenames: false
+        always_run: true
+        args: [check, --json, --output, safety-report.json]

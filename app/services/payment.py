@@ -1,7 +1,7 @@
 """Payment service for Stripe integration."""
 
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+from datetime import datetime
+from typing import Any
 
 from loguru import logger
 
@@ -26,17 +26,17 @@ class PaymentService:
         self.publishable_key = settings.STRIPE_PUBLISHABLE_KEY
         self.webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
-    async def create_customer(self, email: str, name: str) -> Optional[str]:
+    async def create_customer(self, email: str, name: str) -> str | None:
         """Create a Stripe customer."""
         if not USE_STRIPE:
             # Return mock customer ID for development
             return f"cus_mock_{email.replace('@', '_').replace('.', '_')}"
-        
+
         try:
             customer = stripe.Customer.create(
                 email=email,
                 name=name,
-                metadata={"source": "ai_research_platform"}
+                metadata={"source": "ai_research_platform"},
             )
             return customer.id
         except stripe.error.StripeError as e:
@@ -44,19 +44,19 @@ class PaymentService:
             return None
 
     async def create_subscription(
-        self, 
-        customer_id: str, 
+        self,
+        customer_id: str,
         plan: SubscriptionPlan,
-        trial_days: int = 0
-    ) -> Optional[Dict[str, Any]]:
+        trial_days: int = 0,
+    ) -> dict[str, Any] | None:
         """Create a subscription for a customer."""
         try:
             # Get plan details
             plan_limits = get_subscription_limits(plan)
-            
+
             # Create or get price ID for the plan
             price_id = await self._get_or_create_price_id(plan, plan_limits["price"])
-            
+
             # Create subscription
             subscription = stripe.Subscription.create(
                 customer=customer_id,
@@ -65,15 +65,15 @@ class PaymentService:
                 metadata={
                     "plan": plan.value,
                     "searches_limit": str(plan_limits["searches_limit"]),
-                    "features": ",".join(plan_limits["features"])
-                }
+                    "features": ",".join(plan_limits["features"]),
+                },
             )
-            
+
             return {
                 "subscription_id": subscription.id,
                 "status": subscription.status,
                 "current_period_end": datetime.fromtimestamp(subscription.current_period_end),
-                "trial_end": datetime.fromtimestamp(subscription.trial_end) if subscription.trial_end else None
+                "trial_end": datetime.fromtimestamp(subscription.trial_end) if subscription.trial_end else None,
             }
         except stripe.error.StripeError as e:
             logger.error(f"Error creating subscription: {e}")
@@ -84,14 +84,14 @@ class PaymentService:
         try:
             subscription = stripe.Subscription.modify(
                 subscription_id,
-                cancel_at_period_end=True
+                cancel_at_period_end=True,
             )
             return subscription.status in ["active", "canceled"]
         except stripe.error.StripeError as e:
             logger.error(f"Error canceling subscription: {e}")
             return False
 
-    async def get_subscription(self, subscription_id: str) -> Optional[Dict[str, Any]]:
+    async def get_subscription(self, subscription_id: str) -> dict[str, Any] | None:
         """Get subscription details."""
         try:
             subscription = stripe.Subscription.retrieve(subscription_id)
@@ -101,32 +101,32 @@ class PaymentService:
                 "current_period_end": datetime.fromtimestamp(subscription.current_period_end),
                 "cancel_at_period_end": subscription.cancel_at_period_end,
                 "plan": subscription.metadata.get("plan", "free"),
-                "searches_limit": int(subscription.metadata.get("searches_limit", 10))
+                "searches_limit": int(subscription.metadata.get("searches_limit", 10)),
             }
         except stripe.error.StripeError as e:
             logger.error(f"Error retrieving subscription: {e}")
             return None
 
     async def create_checkout_session(
-        self, 
-        customer_id: str, 
+        self,
+        customer_id: str,
         plan: SubscriptionPlan,
         success_url: str,
-        cancel_url: str
-    ) -> Optional[str]:
+        cancel_url: str,
+    ) -> str | None:
         """Create a Stripe checkout session."""
         if not USE_STRIPE:
             # Return mock checkout URL for development
             plan_limits = get_subscription_limits(plan)
-            searches_display = "unlimited" if plan_limits['searches_limit'] == -1 else str(plan_limits['searches_limit'])
+            searches_display = "unlimited" if plan_limits["searches_limit"] == -1 else str(plan_limits["searches_limit"])
             mock_url = f"{success_url}&plan={plan.value}&price={plan_limits['price']}&searches={searches_display}"
             logger.info(f"Mock checkout session created: {mock_url}")
             return mock_url
-        
+
         try:
             plan_limits = get_subscription_limits(plan)
             price_id = await self._get_or_create_price_id(plan, plan_limits["price"])
-            
+
             session = stripe.checkout.Session.create(
                 customer=customer_id,
                 payment_method_types=["card"],
@@ -139,23 +139,23 @@ class PaymentService:
                 cancel_url=cancel_url,
                 metadata={
                     "plan": plan.value,
-                    "searches_limit": str(plan_limits["searches_limit"])
-                }
+                    "searches_limit": str(plan_limits["searches_limit"]),
+                },
             )
-            
+
             return session.url
         except stripe.error.StripeError as e:
             logger.error(f"Error creating checkout session: {e}")
             return None
 
-    async def create_portal_session(self, customer_id: str, return_url: str) -> Optional[str]:
+    async def create_portal_session(self, customer_id: str, return_url: str) -> str | None:
         """Create a customer portal session for subscription management."""
         if not USE_STRIPE:
             # Return mock portal URL for development
             mock_url = f"{return_url}&mock_portal=true"
             logger.info(f"Mock portal session created: {mock_url}")
             return mock_url
-        
+
         try:
             session = stripe.billing_portal.Session.create(
                 customer=customer_id,
@@ -166,27 +166,27 @@ class PaymentService:
             logger.error(f"Error creating portal session: {e}")
             return None
 
-    async def handle_webhook(self, payload: bytes, signature: str) -> Optional[Dict[str, Any]]:
+    async def handle_webhook(self, payload: bytes, signature: str) -> dict[str, Any] | None:
         """Handle Stripe webhook events."""
         try:
             event = stripe.Webhook.construct_event(
-                payload, signature, self.webhook_secret
+                payload, signature, self.webhook_secret,
             )
-            
+
             # Handle different event types
             if event["type"] == "customer.subscription.created":
                 return await self._handle_subscription_created(event["data"]["object"])
-            elif event["type"] == "customer.subscription.updated":
+            if event["type"] == "customer.subscription.updated":
                 return await self._handle_subscription_updated(event["data"]["object"])
-            elif event["type"] == "customer.subscription.deleted":
+            if event["type"] == "customer.subscription.deleted":
                 return await self._handle_subscription_deleted(event["data"]["object"])
-            elif event["type"] == "invoice.payment_succeeded":
+            if event["type"] == "invoice.payment_succeeded":
                 return await self._handle_payment_succeeded(event["data"]["object"])
-            elif event["type"] == "invoice.payment_failed":
+            if event["type"] == "invoice.payment_failed":
                 return await self._handle_payment_failed(event["data"]["object"])
-            
+
             return {"status": "ignored", "event_type": event["type"]}
-            
+
         except ValueError as e:
             logger.error(f"Invalid payload: {e}")
             return None
@@ -200,77 +200,77 @@ class PaymentService:
             # Check if price already exists
             prices = stripe.Price.list(
                 lookup_keys=[f"ai_research_{plan.value}"],
-                active=True
+                active=True,
             )
-            
+
             if prices.data:
                 return prices.data[0].id
-            
+
             # Create new price
             price_obj = stripe.Price.create(
                 unit_amount=price * 100,  # Convert to cents
                 currency="usd",
                 recurring={"interval": "month"},
                 lookup_key=f"ai_research_{plan.value}",
-                metadata={"plan": plan.value}
+                metadata={"plan": plan.value},
             )
-            
+
             return price_obj.id
-            
+
         except stripe.error.StripeError as e:
             logger.error(f"Error creating price: {e}")
             raise
 
-    async def _handle_subscription_created(self, subscription: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_subscription_created(self, subscription: dict[str, Any]) -> dict[str, Any]:
         """Handle subscription created event."""
         logger.info(f"Subscription created: {subscription['id']}")
         return {
             "status": "success",
             "event": "subscription_created",
             "subscription_id": subscription["id"],
-            "customer_id": subscription["customer"]
+            "customer_id": subscription["customer"],
         }
 
-    async def _handle_subscription_updated(self, subscription: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_subscription_updated(self, subscription: dict[str, Any]) -> dict[str, Any]:
         """Handle subscription updated event."""
         logger.info(f"Subscription updated: {subscription['id']}")
         return {
             "status": "success",
             "event": "subscription_updated",
             "subscription_id": subscription["id"],
-            "customer_id": subscription["customer"]
+            "customer_id": subscription["customer"],
         }
 
-    async def _handle_subscription_deleted(self, subscription: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_subscription_deleted(self, subscription: dict[str, Any]) -> dict[str, Any]:
         """Handle subscription deleted event."""
         logger.info(f"Subscription deleted: {subscription['id']}")
         return {
             "status": "success",
             "event": "subscription_deleted",
             "subscription_id": subscription["id"],
-            "customer_id": subscription["customer"]
+            "customer_id": subscription["customer"],
         }
 
-    async def _handle_payment_succeeded(self, invoice: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_payment_succeeded(self, invoice: dict[str, Any]) -> dict[str, Any]:
         """Handle payment succeeded event."""
         logger.info(f"Payment succeeded: {invoice['id']}")
         return {
             "status": "success",
             "event": "payment_succeeded",
             "invoice_id": invoice["id"],
-            "customer_id": invoice["customer"]
+            "customer_id": invoice["customer"],
         }
 
-    async def _handle_payment_failed(self, invoice: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_payment_failed(self, invoice: dict[str, Any]) -> dict[str, Any]:
         """Handle payment failed event."""
         logger.error(f"Payment failed: {invoice['id']}")
         return {
             "status": "success",
             "event": "payment_failed",
             "invoice_id": invoice["id"],
-            "customer_id": invoice["customer"]
+            "customer_id": invoice["customer"],
         }
 
 
 # Create global payment service instance
-payment_service = PaymentService() 
+payment_service = PaymentService()

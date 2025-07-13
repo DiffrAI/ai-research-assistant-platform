@@ -7,11 +7,11 @@ metrics_router = APIRouter()
 
 
 @metrics_router.get(
-    "/metrics", 
+    "/metrics",
     include_in_schema=True,
     summary="Prometheus Metrics",
     description="Expose Prometheus metrics for monitoring the AI Research Assistant Platform",
-    response_description="Prometheus-formatted metrics data"
+    response_description="Prometheus-formatted metrics data",
 )
 async def metrics():
     """Return Prometheus-formatted metrics response."""

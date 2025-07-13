@@ -4,7 +4,8 @@ import asyncio
 import hashlib
 import json
 import re
-from typing import Any, AsyncGenerator, Callable, Tuple
+from collections.abc import AsyncGenerator, Callable
+from typing import Any
 
 from celery.result import AsyncResult
 from langchain_core.messages import AIMessageChunk, HumanMessage
@@ -12,8 +13,8 @@ from loguru import logger
 
 from app import cache, celery_app, trace
 from app.tasks.chat import generate_summary
+from app.workflows.graphs.websearch import WebSearchAgentGraph
 
-from ....workflows.graphs.websearch import WebSearchAgentGraph
 from .helper import CitationReplacer
 from .models import ChatRequest, WebSearchChatRequest
 
@@ -23,7 +24,6 @@ class ChatService:
 
     def __init__(self) -> None:
         """Initialize the chat service."""
-        pass
 
     @staticmethod
     def _hash_request(payload: dict) -> str:
@@ -32,10 +32,9 @@ class ChatService:
 
     @trace(name="chat_service")
     async def chat_service(
-        self, request_params: ChatRequest
+        self, request_params: ChatRequest,
     ) -> Callable[[], AsyncGenerator[str, None]]:
-        """
-        Return a streaming chat generator.
+        """Return a streaming chat generator.
         If the response is cached, replay the cached stream.
         Otherwise, generate the stream and cache the result.
         """
@@ -77,10 +76,9 @@ class ChatService:
 
     @trace(name="chat_websearch_service")
     async def chat_websearch_service(
-        self, request_params: WebSearchChatRequest
+        self, request_params: WebSearchChatRequest,
     ) -> Callable[[], AsyncGenerator[str, None]]:
         """Handles streaming chat responses with integrated web search results."""
-
         # Compile the LangGraph agent
         graph = WebSearchAgentGraph().compile()
 
@@ -144,9 +142,8 @@ class ChatService:
 
         return stream
 
-    async def submit_summary_task(self, text: str) -> Tuple[Any, str, int]:
+    async def submit_summary_task(self, text: str) -> tuple[Any, str, int]:
         """Submit a summary task to Celery and return the task ID."""
-
         logger.info("Submitting summary task to Celery")
         task = generate_summary.delay(text)
         logger.debug(f"Summary task submitted. Task ID: {task.id}")
@@ -157,9 +154,8 @@ class ChatService:
             200,
         )
 
-    async def summary_status(self, task_id: str) -> Tuple[Any, str, int]:
+    async def summary_status(self, task_id: str) -> tuple[Any, str, int]:
         """Check the status of a summary task and return the result if available."""
-
         result = AsyncResult(task_id, app=celery_app)
 
         response_data = {

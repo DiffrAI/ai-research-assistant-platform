@@ -2,7 +2,7 @@
 
 from loguru import logger
 
-from ..states import AgentState
+from app.workflows.graphs.websearch.states import AgentState
 
 
 def route_after_question_rewrite(state: AgentState) -> str:
@@ -16,6 +16,5 @@ def route_after_question_rewrite(state: AgentState) -> str:
     if enhancement_required:
         logger.info("Routing to: question_enhancer")
         return "question_enhancer"
-    else:
-        logger.info("Routing to: websearch")
-        return "websearch"
+    logger.info("Routing to: websearch")
+    return "websearch"

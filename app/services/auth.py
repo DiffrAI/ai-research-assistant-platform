@@ -1,16 +1,15 @@
 """Authentication service for user management."""
 
 from datetime import datetime, timedelta
-from typing import Optional
 
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from loguru import logger
-from sqlalchemy.ext.asyncio import AsyncSession
+from passlib.context import CryptContext
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import settings
-from app.models.user import UserInDB, TokenData, UserCreate, User
+from app.models.user import TokenData, UserCreate, UserInDB
 from app.models.user_db import User as UserDB
 
 # Password hashing context
@@ -34,40 +33,39 @@ class AuthService:
         """Hash a password."""
         return pwd_context.hash(password)
 
-    def create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    def create_access_token(self, data: dict, expires_delta: timedelta | None = None) -> str:
         """Create a JWT access token."""
         to_encode = data.copy()
         if expires_delta:
             expire = datetime.utcnow() + expires_delta
         else:
             expire = datetime.utcnow() + timedelta(minutes=self.access_token_expire_minutes)
-        
-        to_encode.update({"exp": expire})
-        encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
-        return encoded_jwt
 
-    def verify_token(self, token: str) -> Optional[TokenData]:
+        to_encode.update({"exp": expire})
+        return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
+
+    def verify_token(self, token: str) -> TokenData | None:
         """Verify and decode a JWT token."""
         try:
             payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
-            user_id_str: Optional[str] = payload.get("sub")
-            email: Optional[str] = payload.get("email")
-            role: Optional[str] = payload.get("role")
-            
+            user_id_str: str | None = payload.get("sub")
+            email: str | None = payload.get("email")
+            role: str | None = payload.get("role")
+
             if user_id_str is None:
                 return None
-            
+
             # Convert string user_id to int
             try:
                 user_id = int(user_id_str)
             except (ValueError, TypeError):
                 return None
-            
+
             return TokenData(user_id=user_id, email=email, role=role)
         except JWTError:
             return None
 
-    async def authenticate_user(self, email: str, password: str, db: AsyncSession) -> Optional[UserInDB]:
+    async def authenticate_user(self, email: str, password: str, db: AsyncSession) -> UserInDB | None:
         """Authenticate a user with email and password."""
         # Get user from database
         user = await self.get_user_by_email(email, db)
@@ -77,13 +75,13 @@ class AuthService:
 
     async def create_user(self, user_create: UserCreate, db: AsyncSession) -> UserInDB:
         """Create a new user account."""
-        from app.models.user import UserRole, SubscriptionPlan
-        
+        from app.models.user import SubscriptionPlan, UserRole
+
         # Check if user already exists
         existing_user = await self.get_user_by_email(user_create.email, db)
         if existing_user:
             raise ValueError("Email already registered")
-        
+
         # Create new user in database
         db_user = UserDB(
             email=user_create.email,
@@ -95,11 +93,11 @@ class AuthService:
             searches_used_this_month=0,
             searches_limit=10,
         )
-        
+
         db.add(db_user)
         await db.commit()
         await db.refresh(db_user)
-        
+
         # Convert to UserInDB
         return UserInDB(
             id=db_user.id,
@@ -113,14 +111,14 @@ class AuthService:
             searches_limit=db_user.searches_limit,
             subscription_expires_at=db_user.subscription_expires_at,
             created_at=db_user.created_at,
-            updated_at=db_user.updated_at
+            updated_at=db_user.updated_at,
         )
 
-    async def get_user_by_id(self, user_id: int, db: AsyncSession) -> Optional[UserInDB]:
+    async def get_user_by_id(self, user_id: int, db: AsyncSession) -> UserInDB | None:
         """Get a user by ID."""
         result = await db.execute(select(UserDB).where(UserDB.id == user_id))
         db_user = result.scalar_one_or_none()
-        
+
         if db_user:
             return UserInDB(
                 id=db_user.id,
@@ -134,15 +132,15 @@ class AuthService:
                 searches_limit=db_user.searches_limit,
                 subscription_expires_at=db_user.subscription_expires_at,
                 created_at=db_user.created_at,
-                updated_at=db_user.updated_at
+                updated_at=db_user.updated_at,
             )
         return None
 
-    async def get_user_by_email(self, email: str, db: AsyncSession) -> Optional[UserInDB]:
+    async def get_user_by_email(self, email: str, db: AsyncSession) -> UserInDB | None:
         """Get a user by email."""
         result = await db.execute(select(UserDB).where(UserDB.email == email))
         db_user = result.scalar_one_or_none()
-        
+
         if db_user:
             return UserInDB(
                 id=db_user.id,
@@ -156,7 +154,7 @@ class AuthService:
                 searches_limit=db_user.searches_limit,
                 subscription_expires_at=db_user.subscription_expires_at,
                 created_at=db_user.created_at,
-                updated_at=db_user.updated_at
+                updated_at=db_user.updated_at,
             )
         return None
 
@@ -175,15 +173,15 @@ class AuthService:
             await db.rollback()
         return False
 
-    async def get_current_user(self, token: str, db: AsyncSession) -> Optional[UserInDB]:
+    async def get_current_user(self, token: str, db: AsyncSession) -> UserInDB | None:
         """Get current user from JWT token."""
         token_data = self.verify_token(token)
         if token_data is None:
             return None
-        
+
         # Get user from database
         return await self.get_user_by_email(token_data.email, db)
 
 
 # Create global auth service instance
-auth_service = AuthService() 
+auth_service = AuthService()

@@ -1,1 +1,1 @@
-"""Authentication API module.""" 
+"""Authentication API module."""

@@ -4,8 +4,7 @@ import hashlib
 import json
 import time
 import uuid
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
 
 from loguru import logger
 
@@ -13,7 +12,9 @@ from app import cache, trace
 from app.workflows.graphs.websearch import WebSearchAgentGraph
 from app.workflows.graphs.websearch.components.answer_generator import AnswerGenerator
 from app.workflows.graphs.websearch.components.question_rewriter import QuestionRewriter
-from app.workflows.graphs.websearch.components.websearch_executor import WebSearchExecutor
+from app.workflows.graphs.websearch.components.websearch_executor import (
+    WebSearchExecutor,
+)
 
 from .models import (
     ExportRequest,
@@ -41,7 +42,7 @@ class ResearchService:
         return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
 
     @staticmethod
-    def _check_user_limits(user_id: str) -> Tuple[bool, str]:
+    def _check_user_limits(_user_id: str) -> tuple[bool, str]:
         """Check if user has exceeded their search limits."""
         # TODO: Implement actual user limit checking with database
         # For now, return True (allowed) for demo purposes
@@ -55,10 +56,9 @@ class ResearchService:
 
     @trace(name="research_service")
     async def conduct_research(
-        self, user_id: str, request: ResearchRequest
-    ) -> Tuple[ResearchResponse, str, int]:
+        self, user_id: str, request: ResearchRequest,
+    ) -> tuple[ResearchResponse, str, int]:
         """Conduct research using AI and web search."""
-        
         # Check user limits
         allowed, message = self._check_user_limits(user_id)
         if not allowed:
@@ -72,11 +72,11 @@ class ResearchService:
             return ResearchResponse.model_validate(json.loads(cached_response)), "Research completed from cache", 200
 
         start_time = time.time()
-        
+
         try:
             # Prepare initial input for agent execution
             from langchain_core.messages import HumanMessage
-            
+
             state_input = {
                 "question": HumanMessage(content=request.query),
                 "refined_question": "",
@@ -88,23 +88,23 @@ class ResearchService:
 
             # Run the research workflow
             final_state = await self._run_research_workflow(state_input, request.max_results, user_id)
-            
+
             # Process results
             results = self._process_search_results(final_state.get("search_results", []))
-            
+
             # Extract summary from messages
             messages = final_state.get("messages", [])
             summary = "No summary available"
             if messages and len(messages) > 0:
                 # Get the last AI message which should contain the summary
                 for message in reversed(messages):
-                    if hasattr(message, 'content') and message.content:
+                    if hasattr(message, "content") and message.content:
                         summary = message.content
                         break
-            
+
             # Calculate search time
             search_time = time.time() - start_time
-            
+
             # Create response
             response = ResearchResponse(
                 query=request.query,
@@ -113,34 +113,33 @@ class ResearchService:
                 citations=self._extract_citations(results),
                 total_results=len(results),
                 search_time=search_time,
-                model_used="local" if hasattr(self.answer_generator, 'llm') else "openai"
+                model_used="local" if hasattr(self.answer_generator, "llm") else "openai",
             )
 
             # Cache the response
             await cache.set(cache_key, response.model_dump_json(), ttl=3600)  # 1 hour cache
-            
+
             # Increment user usage
             self._increment_user_usage(user_id)
-            
+
             return response, "Research completed successfully", 200
 
         except Exception as e:
             logger.error(f"Error in research service: {e}")
-            return None, f"Research failed: {str(e)}", 500
+            return None, f"Research failed: {e!s}", 500
 
-    async def _run_research_workflow(self, state_input: Dict, max_results: int, user_id: str) -> Dict:
+    async def _run_research_workflow(self, state_input: dict, max_results: int, user_id: str) -> dict:
         """Run the research workflow using LangGraph."""
-        
         # Override max results for this search
-        original_max_results = getattr(self.websearch_executor, 'max_results', 10)
+        original_max_results = getattr(self.websearch_executor, "max_results", 10)
         self.websearch_executor.max_results = max_results
-        
+
         try:
             # Run the workflow with configurable key for in-memory checkpointer
             logger.info(f"Starting research workflow with input: {state_input}")
             final_state = await self.graph.ainvoke(
                 state_input,
-                config={"configurable": {"thread_id": user_id}}
+                config={"configurable": {"thread_id": user_id}},
             )
             logger.info(f"Research workflow completed with final state keys: {list(final_state.keys())}")
             return final_state
@@ -148,23 +147,23 @@ class ResearchService:
             # Restore original max results
             self.websearch_executor.max_results = original_max_results
 
-    def _process_search_results(self, raw_results: List[Dict]) -> List[ResearchResult]:
+    def _process_search_results(self, raw_results: list[dict]) -> list[ResearchResult]:
         """Process raw search results into structured format."""
         processed_results = []
-        
+
         for result in raw_results:
             processed_result = ResearchResult(
                 title=result.get("title", "Untitled"),
                 content=result.get("content", ""),
                 url=result.get("link", ""),
                 source=result.get("source", "Unknown"),
-                relevance_score=result.get("relevance_score")
+                relevance_score=result.get("relevance_score"),
             )
             processed_results.append(processed_result)
-        
+
         return processed_results
 
-    def _extract_citations(self, results: List[ResearchResult]) -> List[str]:
+    def _extract_citations(self, results: list[ResearchResult]) -> list[str]:
         """Extract citations from research results."""
         citations = []
         for i, result in enumerate(results, 1):
@@ -173,14 +172,13 @@ class ResearchService:
         return citations
 
     async def save_research(
-        self, user_id: str, research_response: ResearchResponse, tags: List[str] = None
-    ) -> Tuple[SavedResearch, str, int]:
+        self, user_id: str, research_response: ResearchResponse, tags: list[str] = None,
+    ) -> tuple[SavedResearch, str, int]:
         """Save research results for later reference."""
-        
         try:
             research_id = str(uuid.uuid4())
             now = datetime.utcnow()
-            
+
             saved_research = SavedResearch(
                 id=research_id,
                 query=research_response.query,
@@ -188,17 +186,17 @@ class ResearchService:
                 summary=research_response.summary,
                 created_at=now,
                 updated_at=now,
-                tags=tags or []
+                tags=tags or [],
             )
-            
+
             # TODO: Save to database
             logger.info(f"Saved research {research_id} for user {user_id}")
-            
+
             return saved_research, "Research saved successfully", 200
-            
+
         except Exception as e:
             logger.error(f"Error saving research: {e}")
-            return None, f"Failed to save research: {str(e)}", 500
+            return None, f"Failed to save research: {e!s}", 500
 
     async def get_user_subscription(self, user_id: str) -> UserSubscription:
         """Get user's subscription information."""
@@ -210,16 +208,15 @@ class ResearchService:
             searches_used=5,  # Demo value
             searches_limit=10,  # Free tier limit
             expires_at=None,
-            is_active=True
+            is_active=True,
         )
 
-    async def export_research(self, request: ExportRequest) -> Tuple[bytes, str, int]:
+    async def export_research(self, request: ExportRequest) -> tuple[bytes, str, int]:
         """Export research results in various formats."""
-        
         try:
             # TODO: Implement actual research retrieval and export
             # For now, return a demo export
-            
+
             if request.format == "pdf":
                 content = b"PDF export demo content"
                 filename = f"research_{request.research_id}.pdf"
@@ -234,9 +231,9 @@ class ResearchService:
                 filename = f"research_{request.research_id}.json"
             else:
                 return None, "Unsupported export format", 400
-            
+
             return content, filename, 200
-            
+
         except Exception as e:
             logger.error(f"Error exporting research: {e}")
-            return None, f"Export failed: {str(e)}", 500 
+            return None, f"Export failed: {e!s}", 500

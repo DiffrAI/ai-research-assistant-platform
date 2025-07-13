@@ -8,4 +8,4 @@ from .controller import router as research_router
 research_api = APIRouter()
 research_api.include_router(research_router, tags=["Research"])
 
-__all__ = ["research_api"] 
+__all__ = ["research_api"]
