@@ -10,8 +10,12 @@ class ResearchRequest(BaseModel):
 
     query: str = Field(..., description="Research query or question")
     max_results: int = Field(default=10, description="Maximum number of search results")
-    include_citations: bool = Field(default=True, description="Include citations in response")
-    export_format: str | None = Field(default=None, description="Export format (pdf, docx, markdown)")
+    include_citations: bool = Field(
+        default=True, description="Include citations in response"
+    )
+    export_format: str | None = Field(
+        default=None, description="Export format (pdf, docx, markdown)"
+    )
 
 
 class ResearchResult(BaseModel):
@@ -55,7 +59,9 @@ class UserSubscription(BaseModel):
     plan: str = Field(..., description="Subscription plan (free, pro, enterprise)")
     searches_used: int = Field(..., description="Number of searches used this month")
     searches_limit: int = Field(..., description="Monthly search limit")
-    expires_at: datetime | None = Field(default=None, description="Subscription expiry date")
+    expires_at: datetime | None = Field(
+        default=None, description="Subscription expiry date"
+    )
     is_active: bool = Field(..., description="Whether subscription is active")
 
 
@@ -64,5 +70,9 @@ class ExportRequest(BaseModel):
 
     research_id: str = Field(..., description="Research session ID to export")
     format: str = Field(..., description="Export format (pdf, docx, markdown, json)")
-    include_citations: bool = Field(default=True, description="Include citations in export")
-    include_summary: bool = Field(default=True, description="Include AI summary in export")
+    include_citations: bool = Field(
+        default=True, description="Include citations in export"
+    )
+    include_summary: bool = Field(
+        default=True, description="Include AI summary in export"
+    )

@@ -1,6 +1,5 @@
 """Payment controller for subscription management."""
 
-
 from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.routing import APIRouter
 from pydantic import BaseModel
@@ -20,11 +19,12 @@ class CheckoutSessionRequest(BaseModel):
 class PortalSessionRequest(BaseModel):
     return_url: str
 
+
 router = APIRouter()
 
 
 @router.get("/plans")
-async def get_subscription_plans():
+async def get_subscription_plans() -> AppJSONResponse:
     """Get available subscription plans."""
     plans = {}
     for plan in SubscriptionPlan:
@@ -45,7 +45,10 @@ async def get_subscription_plans():
 
 
 @router.post("/create-checkout-session")
-async def create_checkout_session(checkout_data: CheckoutSessionRequest, current_user: User = Depends(get_current_user)):
+async def create_checkout_session(
+    checkout_data: CheckoutSessionRequest,
+    current_user: User = Depends(get_current_user),
+) -> AppJSONResponse:
     """Create a Stripe checkout session for subscription."""
     try:
         # Create or get Stripe customer
@@ -90,7 +93,7 @@ async def create_checkout_session(checkout_data: CheckoutSessionRequest, current
 @router.post("/create-portal-session")
 async def create_portal_session(
     portal_data: PortalSessionRequest,
-):
+) -> AppJSONResponse:
     """Create a customer portal session for subscription management."""
     try:
         # TODO: Get customer ID from user record
@@ -124,7 +127,7 @@ async def create_portal_session(
 async def stripe_webhook(
     request: Request,
     stripe_signature: str = Header(None),
-):
+) -> AppJSONResponse:
     """Handle Stripe webhook events."""
     if not stripe_signature:
         raise HTTPException(
@@ -161,7 +164,7 @@ async def stripe_webhook(
 @router.get("/subscription/{subscription_id}")
 async def get_subscription(
     subscription_id: str,
-):
+) -> AppJSONResponse:
     """Get subscription details."""
     try:
         subscription = await payment_service.get_subscription(subscription_id)
@@ -190,7 +193,7 @@ async def get_subscription(
 @router.post("/cancel-subscription/{subscription_id}")
 async def cancel_subscription(
     subscription_id: str,
-):
+) -> AppJSONResponse:
     """Cancel a subscription."""
     try:
         success = await payment_service.cancel_subscription(subscription_id)
@@ -217,18 +220,26 @@ async def cancel_subscription(
 
 
 @router.get("/usage")
-async def get_usage_info():
+async def get_usage_info(
+    current_user: User = Depends(get_current_user),
+) -> AppJSONResponse:
     """Get current user's usage information."""
     # Get plan limits
-    plan_limits = get_subscription_limits(User.subscription_plan)
+    plan_limits = get_subscription_limits(current_user.subscription_plan)
 
     usage_info = {
-        "searches_used": User.searches_used_this_month,
-        "searches_limit": User.searches_limit,
-        "searches_remaining": max(0, User.searches_limit - User.searches_used_this_month),
-        "usage_percentage": (User.searches_used_this_month / User.searches_limit * 100) if User.searches_limit > 0 else 0,
-        "plan": User.subscription_plan.value,
-        "plan_name": User.subscription_plan.value.title(),
+        "searches_used": current_user.searches_used_this_month,
+        "searches_limit": current_user.searches_limit,
+        "searches_remaining": max(
+            0, current_user.searches_limit - current_user.searches_used_this_month
+        ),
+        "usage_percentage": (
+            current_user.searches_used_this_month / current_user.searches_limit * 100
+        )
+        if current_user.searches_limit > 0
+        else 0,
+        "plan": current_user.subscription_plan.value,
+        "plan_name": current_user.subscription_plan.value.title(),
         "plan_price": plan_limits["price"],
         "plan_features": plan_limits["features"],
     }

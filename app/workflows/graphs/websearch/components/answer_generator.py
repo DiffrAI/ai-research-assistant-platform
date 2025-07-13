@@ -17,16 +17,17 @@ from app.workflows.graphs.websearch.states import AgentState
 class AnswerGenerator:
     """Agent component responsible for synthesizing a final answer from retrieved web content."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         if settings.USE_LOCAL_MODEL:
             self.llm = LocalModelClient()
         else:
             from langchain_openai import ChatOpenAI
             from pydantic import SecretStr
+
             self.llm = ChatOpenAI(
                 model=LLMModelMap.ANSWER_GENERATOR,
                 api_key=SecretStr(settings.OPENAI_API_KEY),
-            )
+            )  # type: ignore
 
     def generate(self, state: AgentState) -> dict[str, list[AIMessage]]:
         """Generates an answer using retrieved web content and the user's refined question."""
@@ -50,7 +51,8 @@ class AnswerGenerator:
         writer({"citation_map": result_blocks})
 
         rag_prompt = RAG_PROMPT.format(
-            context=combined_content, question=state["question"].content,
+            context=combined_content,
+            question=state["question"].content,
         )
         logger.debug(f"Aggregated content for answer generation:\n{rag_prompt}")
 
@@ -66,14 +68,16 @@ class AnswerGenerator:
         )
         conversation.append(HumanMessage(content=rag_prompt))
 
-        logger.info(f"Generating answer with {'local' if settings.USE_LOCAL_MODEL else 'OpenAI'} model...")
+        logger.info(
+            f"Generating answer with {'local' if settings.USE_LOCAL_MODEL else 'OpenAI'} model..."
+        )
 
         if settings.USE_LOCAL_MODEL:
             answer_content = self.llm.invoke(conversation)
         else:
             prompt = ChatPromptTemplate.from_messages(conversation)
-            answer = self.llm.invoke(prompt.format())
-            answer_content = answer.content
+            answer = self.llm.invoke(prompt.format_messages())
+            answer_content = str(answer.content)
 
         logger.info(f"Final Answer Generated:\n{answer_content}")
 

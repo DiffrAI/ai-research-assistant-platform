@@ -4,7 +4,6 @@ import multiprocessing
 import signal
 import subprocess
 import sys
-from typing import Optional
 
 import uvicorn
 from loguru import logger
@@ -19,10 +18,11 @@ def calculate_worker_count() -> int:
 
 def setup_signal_handlers() -> None:
     """Setup signal handlers for graceful shutdown."""
+
     def signal_handler(signum, frame):
         logger.info(f"Received signal {signum}, shutting down gracefully...")
         sys.exit(0)
-    
+
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
@@ -33,12 +33,12 @@ def validate_environment() -> None:
     logger.info(f"Log level: {settings.LOG_LEVEL}")
     logger.info(f"Host: {settings.HOST}")
     logger.info(f"Port: {settings.PORT}")
-    
+
     if settings.ENVIRONMENT == AppEnvs.PRODUCTION:
         if settings.SECRET_KEY == "your-secret-key-change-in-production":
             logger.error("SECRET_KEY must be changed in production!")
             sys.exit(1)
-        
+
         if settings.DEBUG:
             logger.warning("DEBUG mode is enabled in production!")
 
@@ -48,7 +48,7 @@ def start_development_server() -> None:
     try:
         worker_count = settings.WORKER_COUNT or calculate_worker_count()
         logger.info(f"🚀 Starting development server with {worker_count} worker(s)")
-        
+
         uvicorn.run(
             app="app.core.server:app",
             host=settings.HOST,
@@ -67,15 +67,18 @@ def start_production_server() -> None:
     """Start the FastAPI application with Gunicorn for production."""
     try:
         logger.info("✅ Production environment detected. Launching with Gunicorn...")
-        
+
         # Validate production settings
-        if not settings.SECRET_KEY or settings.SECRET_KEY == "your-secret-key-change-in-production":
+        if (
+            not settings.SECRET_KEY
+            or settings.SECRET_KEY == "your-secret-key-change-in-production"
+        ):
             logger.error("SECRET_KEY must be set in production!")
             sys.exit(1)
-        
+
         # Start with Gunicorn
         subprocess.run(["./start.sh"], check=True)
-        
+
     except subprocess.CalledProcessError as e:
         logger.error(f"❌ Failed to start production server: {e}")
         sys.exit(1)
@@ -92,16 +95,16 @@ def main() -> None:
     try:
         # Setup signal handlers for graceful shutdown
         setup_signal_handlers()
-        
+
         # Validate environment configuration
         validate_environment()
-        
+
         # Start appropriate server based on environment
         if settings.ENVIRONMENT == AppEnvs.PRODUCTION:
             start_production_server()
         else:
             start_development_server()
-            
+
     except KeyboardInterrupt:
         logger.info("Received interrupt signal, shutting down...")
         sys.exit(0)

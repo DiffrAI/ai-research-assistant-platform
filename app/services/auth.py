@@ -1,6 +1,7 @@
 """Authentication service for user management."""
 
 from datetime import datetime, timedelta
+from typing import Any
 
 from jose import JWTError, jwt
 from loguru import logger
@@ -19,7 +20,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 class AuthService:
     """Service for handling authentication and user management."""
 
-    def __init__(self):
+    def __init__(self):  # type: ignore
         """Initialize the auth service."""
         self.secret_key = settings.SECRET_KEY
         self.algorithm = settings.ALGORITHM
@@ -33,13 +34,17 @@ class AuthService:
         """Hash a password."""
         return pwd_context.hash(password)
 
-    def create_access_token(self, data: dict, expires_delta: timedelta | None = None) -> str:
+    def create_access_token(
+        self, data: dict[str, Any], expires_delta: timedelta | None = None
+    ) -> str:
         """Create a JWT access token."""
         to_encode = data.copy()
         if expires_delta:
             expire = datetime.utcnow() + expires_delta
         else:
-            expire = datetime.utcnow() + timedelta(minutes=self.access_token_expire_minutes)
+            expire = datetime.utcnow() + timedelta(
+                minutes=self.access_token_expire_minutes
+            )
 
         to_encode.update({"exp": expire})
         return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
@@ -65,7 +70,9 @@ class AuthService:
         except JWTError:
             return None
 
-    async def authenticate_user(self, email: str, password: str, db: AsyncSession) -> UserInDB | None:
+    async def authenticate_user(
+        self, email: str, password: str, db: AsyncSession
+    ) -> UserInDB | None:
         """Authenticate a user with email and password."""
         # Get user from database
         user = await self.get_user_by_email(email, db)
@@ -99,20 +106,7 @@ class AuthService:
         await db.refresh(db_user)
 
         # Convert to UserInDB
-        return UserInDB(
-            id=db_user.id,
-            email=db_user.email,
-            full_name=db_user.full_name,
-            hashed_password=db_user.hashed_password,
-            role=db_user.role,
-            subscription_plan=db_user.subscription_plan,
-            is_active=db_user.is_active,
-            searches_used_this_month=db_user.searches_used_this_month,
-            searches_limit=db_user.searches_limit,
-            subscription_expires_at=db_user.subscription_expires_at,
-            created_at=db_user.created_at,
-            updated_at=db_user.updated_at,
-        )
+        return UserInDB.model_validate(db_user, from_attributes=True)
 
     async def get_user_by_id(self, user_id: int, db: AsyncSession) -> UserInDB | None:
         """Get a user by ID."""
@@ -120,20 +114,7 @@ class AuthService:
         db_user = result.scalar_one_or_none()
 
         if db_user:
-            return UserInDB(
-                id=db_user.id,
-                email=db_user.email,
-                full_name=db_user.full_name,
-                hashed_password=db_user.hashed_password,
-                role=db_user.role,
-                subscription_plan=db_user.subscription_plan,
-                is_active=db_user.is_active,
-                searches_used_this_month=db_user.searches_used_this_month,
-                searches_limit=db_user.searches_limit,
-                subscription_expires_at=db_user.subscription_expires_at,
-                created_at=db_user.created_at,
-                updated_at=db_user.updated_at,
-            )
+            return UserInDB.model_validate(db_user, from_attributes=True)
         return None
 
     async def get_user_by_email(self, email: str, db: AsyncSession) -> UserInDB | None:
@@ -142,20 +123,7 @@ class AuthService:
         db_user = result.scalar_one_or_none()
 
         if db_user:
-            return UserInDB(
-                id=db_user.id,
-                email=db_user.email,
-                full_name=db_user.full_name,
-                hashed_password=db_user.hashed_password,
-                role=db_user.role,
-                subscription_plan=db_user.subscription_plan,
-                is_active=db_user.is_active,
-                searches_used_this_month=db_user.searches_used_this_month,
-                searches_limit=db_user.searches_limit,
-                subscription_expires_at=db_user.subscription_expires_at,
-                created_at=db_user.created_at,
-                updated_at=db_user.updated_at,
-            )
+            return UserInDB.model_validate(db_user, from_attributes=True)
         return None
 
     async def increment_user_searches(self, user_id: int, db: AsyncSession) -> bool:
@@ -176,7 +144,7 @@ class AuthService:
     async def get_current_user(self, token: str, db: AsyncSession) -> UserInDB | None:
         """Get current user from JWT token."""
         token_data = self.verify_token(token)
-        if token_data is None:
+        if token_data is None or token_data.email is None:
             return None
 
         # Get user from database

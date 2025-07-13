@@ -1,5 +1,6 @@
 """Question enhancement component for generating multiple refined websearch questions."""
 
+from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from loguru import logger
@@ -24,23 +25,23 @@ class EnhancedQuestionsResult(BaseModel):
 class QuestionEnhancer:
     """Agent component responsible for expanding a single query into multiple precise search questions."""
 
-    def __init__(self):
+    def __init__(self):  # type: ignore
         if settings.USE_LOCAL_MODEL:
             self.llm = LocalModelClient()
         else:
             from langchain_openai import ChatOpenAI
             from pydantic import SecretStr
+
             self.llm = ChatOpenAI(
                 model=LLMModelMap.QUESTION_ENHANCER,
                 api_key=SecretStr(settings.OPENAI_API_KEY),
             ).with_structured_output(
                 schema=EnhancedQuestionsResult,
                 strict=True,
-            )
+            )  # type: ignore
 
     def enhance(self, state: AgentState) -> dict:
-        """Enhances a question into multiple standalone questions for better web search coverage.
-        """
+        """Enhances a question into multiple standalone questions for better web search coverage."""
         question = (
             state["refined_question"]
             if state.get("refined_question")
@@ -58,7 +59,9 @@ class QuestionEnhancer:
             HumanMessage(content=question),
         ]
 
-        logger.info(f"Enhancing question with {'local' if settings.USE_LOCAL_MODEL else 'OpenAI'} model...")
+        logger.info(
+            f"Enhancing question with {'local' if settings.USE_LOCAL_MODEL else 'OpenAI'} model..."
+        )
 
         if settings.USE_LOCAL_MODEL:
             response_content = self.llm.invoke(conversation)
@@ -69,13 +72,16 @@ class QuestionEnhancer:
 
             # Ensure we have exactly 2 questions
             while len(refined_questions) < 2:
-                refined_questions.append(f"Enhanced question {len(refined_questions) + 1}")
+                refined_questions.append(
+                    f"Enhanced question {len(refined_questions) + 1}"
+                )
 
             response = EnhancedQuestionsResult(refined_questions=refined_questions[:2])
         else:
             from langchain_core.prompts import ChatPromptTemplate
+
             enhancer_prompt = ChatPromptTemplate.from_messages(conversation)
-            response_data = (enhancer_prompt | self.llm).invoke({})
+            response_data: Any = self.llm.invoke(enhancer_prompt.format_messages())
             response = EnhancedQuestionsResult.model_validate(response_data)
 
         logger.info(f"Generated enhanced questions: {response.refined_questions}")

@@ -11,17 +11,20 @@ from app.models.user import SubscriptionPlan, get_subscription_limits
 # Configure Stripe only if keys are provided
 if settings.STRIPE_SECRET_KEY:
     import stripe
+
     stripe.api_key = settings.STRIPE_SECRET_KEY
     USE_STRIPE = True
 else:
     USE_STRIPE = False
-    logger.warning("Stripe keys not configured. Using mock payment service for development.")
+    logger.warning(
+        "Stripe keys not configured. Using mock payment service for development."
+    )
 
 
 class PaymentService:
     """Service for handling payments and subscriptions."""
 
-    def __init__(self):
+    def __init__(self):  # type: ignore
         """Initialize the payment service."""
         self.publishable_key = settings.STRIPE_PUBLISHABLE_KEY
         self.webhook_secret = settings.STRIPE_WEBHOOK_SECRET
@@ -39,7 +42,7 @@ class PaymentService:
                 metadata={"source": "ai_research_platform"},
             )
             return customer.id
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             logger.error(f"Error creating Stripe customer: {e}")
             return None
 
@@ -72,10 +75,14 @@ class PaymentService:
             return {
                 "subscription_id": subscription.id,
                 "status": subscription.status,
-                "current_period_end": datetime.fromtimestamp(subscription.current_period_end),
-                "trial_end": datetime.fromtimestamp(subscription.trial_end) if subscription.trial_end else None,
+                "current_period_end": datetime.fromtimestamp(
+                    subscription.current_period_end
+                ),
+                "trial_end": datetime.fromtimestamp(subscription.trial_end)
+                if subscription.trial_end
+                else None,
             }
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             logger.error(f"Error creating subscription: {e}")
             return None
 
@@ -87,7 +94,7 @@ class PaymentService:
                 cancel_at_period_end=True,
             )
             return subscription.status in ["active", "canceled"]
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             logger.error(f"Error canceling subscription: {e}")
             return False
 
@@ -98,12 +105,14 @@ class PaymentService:
             return {
                 "id": subscription.id,
                 "status": subscription.status,
-                "current_period_end": datetime.fromtimestamp(subscription.current_period_end),
+                "current_period_end": datetime.fromtimestamp(
+                    subscription.current_period_end
+                ),
                 "cancel_at_period_end": subscription.cancel_at_period_end,
                 "plan": subscription.metadata.get("plan", "free"),
                 "searches_limit": int(subscription.metadata.get("searches_limit", 10)),
             }
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             logger.error(f"Error retrieving subscription: {e}")
             return None
 
@@ -118,7 +127,11 @@ class PaymentService:
         if not USE_STRIPE:
             # Return mock checkout URL for development
             plan_limits = get_subscription_limits(plan)
-            searches_display = "unlimited" if plan_limits["searches_limit"] == -1 else str(plan_limits["searches_limit"])
+            searches_display = (
+                "unlimited"
+                if plan_limits["searches_limit"] == -1
+                else str(plan_limits["searches_limit"])
+            )
             mock_url = f"{success_url}&plan={plan.value}&price={plan_limits['price']}&searches={searches_display}"
             logger.info(f"Mock checkout session created: {mock_url}")
             return mock_url
@@ -130,10 +143,12 @@ class PaymentService:
             session = stripe.checkout.Session.create(
                 customer=customer_id,
                 payment_method_types=["card"],
-                line_items=[{
-                    "price": price_id,
-                    "quantity": 1,
-                }],
+                line_items=[
+                    {
+                        "price": price_id,
+                        "quantity": 1,
+                    }
+                ],
                 mode="subscription",
                 success_url=success_url,
                 cancel_url=cancel_url,
@@ -144,11 +159,13 @@ class PaymentService:
             )
 
             return session.url
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             logger.error(f"Error creating checkout session: {e}")
             return None
 
-    async def create_portal_session(self, customer_id: str, return_url: str) -> str | None:
+    async def create_portal_session(
+        self, customer_id: str, return_url: str
+    ) -> str | None:
         """Create a customer portal session for subscription management."""
         if not USE_STRIPE:
             # Return mock portal URL for development
@@ -162,15 +179,19 @@ class PaymentService:
                 return_url=return_url,
             )
             return session.url
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             logger.error(f"Error creating portal session: {e}")
             return None
 
-    async def handle_webhook(self, payload: bytes, signature: str) -> dict[str, Any] | None:
+    async def handle_webhook(
+        self, payload: bytes, signature: str
+    ) -> dict[str, Any] | None:
         """Handle Stripe webhook events."""
         try:
             event = stripe.Webhook.construct_event(
-                payload, signature, self.webhook_secret,
+                payload,
+                signature,
+                self.webhook_secret,
             )
 
             # Handle different event types
@@ -190,7 +211,7 @@ class PaymentService:
         except ValueError as e:
             logger.error(f"Invalid payload: {e}")
             return None
-        except stripe.error.SignatureVerificationError as e:
+        except stripe.SignatureVerificationError as e:
             logger.error(f"Invalid signature: {e}")
             return None
 
@@ -217,11 +238,13 @@ class PaymentService:
 
             return price_obj.id
 
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             logger.error(f"Error creating price: {e}")
             raise
 
-    async def _handle_subscription_created(self, subscription: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_subscription_created(
+        self, subscription: dict[str, Any]
+    ) -> dict[str, Any]:
         """Handle subscription created event."""
         logger.info(f"Subscription created: {subscription['id']}")
         return {
@@ -231,7 +254,9 @@ class PaymentService:
             "customer_id": subscription["customer"],
         }
 
-    async def _handle_subscription_updated(self, subscription: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_subscription_updated(
+        self, subscription: dict[str, Any]
+    ) -> dict[str, Any]:
         """Handle subscription updated event."""
         logger.info(f"Subscription updated: {subscription['id']}")
         return {
@@ -241,7 +266,9 @@ class PaymentService:
             "customer_id": subscription["customer"],
         }
 
-    async def _handle_subscription_deleted(self, subscription: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_subscription_deleted(
+        self, subscription: dict[str, Any]
+    ) -> dict[str, Any]:
         """Handle subscription deleted event."""
         logger.info(f"Subscription deleted: {subscription['id']}")
         return {
@@ -251,7 +278,9 @@ class PaymentService:
             "customer_id": subscription["customer"],
         }
 
-    async def _handle_payment_succeeded(self, invoice: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_payment_succeeded(
+        self, invoice: dict[str, Any]
+    ) -> dict[str, Any]:
         """Handle payment succeeded event."""
         logger.info(f"Payment succeeded: {invoice['id']}")
         return {

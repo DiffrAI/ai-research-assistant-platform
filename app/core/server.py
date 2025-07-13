@@ -1,6 +1,5 @@
 """Primary application entry point for AI Research Assistant Platform."""
 
-
 from fastapi import FastAPI
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware

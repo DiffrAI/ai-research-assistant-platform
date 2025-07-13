@@ -10,6 +10,7 @@ from .duckduckgo_search_tool import DUCKDUCKGO_SEARCH_TOOL
 # Conditionally import Tavily tool only if needed
 if settings.SEARCH_PROVIDER.lower() == "tavily":
     from .tavily_search_tool import TAVILY_SEARCH_TOOL
+
     SEARCH_TOOL: BaseTool = TAVILY_SEARCH_TOOL
 else:
     SEARCH_TOOL: BaseTool = DUCKDUCKGO_SEARCH_TOOL

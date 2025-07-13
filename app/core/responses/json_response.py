@@ -38,14 +38,14 @@ class AppJSONResponse(JSONResponse):
             "message": message,
             "data": data,
         }
-        
+
         # Add error information if present
         if error is not None:
             content["error"] = error
-            
+
         if error_code is not None:
             content["error_code"] = error_code
-            
+
         if details is not None:
             content["details"] = details
 

@@ -11,7 +11,7 @@ sleep 2
 # Start backend
 echo "🚀 Starting FastAPI backend..."
 source .venv/bin/activate
-python main.py &
+uv run python main.py &
 BACKEND_PID=$!
 
 # Wait for backend to start

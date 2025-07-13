@@ -16,10 +16,10 @@ async def token_or_ip_key(request: Request) -> str:
         if token:
             return token
     # Fallback to IP
-    return request.client.host
+    return request.client.host if request.client else "unknown"
 
 
-async def init_rate_limiter():
+async def init_rate_limiter() -> None:
     """Initialize FastAPI rate limiter with local or Redis backend."""
     if settings.RATE_LIMIT_BACKEND == RateLimitBackend.LOCAL:
         fake_redis = fakeredis.aioredis.FakeRedis()

@@ -36,11 +36,6 @@ format: ## Format code with black and isort
 	$(ISORT)
 	$(BLACK)
 
-.PHONY: lint
-lint: ## Run linters (ruff + mypy)
-	uv pip run ruff check .
-	$(MYPY)
-
 .PHONY: check
 check: ## Run pre-commit on all files
 	$(PRECOMMIT) run --all-files
@@ -92,15 +87,15 @@ test-fast: ## Run tests without coverage (faster)
 	uv run pytest tests/ -v
 
 lint: ## Run linting checks
-	uv run ruff check .
-	uv run ruff format --check .
+	uv run ruff check . --fix
+	uv run ruff format .
 
 lint-fix: ## Fix linting issues
 	uv run ruff check . --fix
 	uv run ruff format .
 
 type-check: ## Run type checking
-	uv run mypy app/ --ignore-missing-imports
+	$(PYTHON) -m mypy app/ --ignore-missing-imports
 
 security-check: ## Run security checks
 	uv run bandit -r app/ -f json -o bandit-report.json || true

@@ -9,13 +9,19 @@ from app.core.server import app
 def test_research_unauthenticated():
     """Test that unauthenticated research requests are rejected."""
     with TestClient(app) as client:
-        response = client.post("/api/v1/research", json={"query": "What is the latest news about AI?"})
+        response = client.post(
+            "/api/v1/research", json={"query": "What is the latest news about AI?"}
+        )
         # Should get 422 validation error because authentication is required
         assert response.status_code == 422
         data = response.json()
         assert data["status"] == "success" or data["status"] == "error"
         # Check for validation error message
-        assert "validation" in data["message"].lower() or "error" in data["message"].lower()
+        assert (
+            "validation" in data["message"].lower()
+            or "error" in data["message"].lower()
+        )
+
 
 # To test authenticated requests, you would need to:
 # 1. Register a test user

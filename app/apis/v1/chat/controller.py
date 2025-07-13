@@ -12,15 +12,17 @@ from .service import ChatService
 
 router = APIRouter()
 
+
 def common_dependency():
     """Common dependency."""
     return {"msg": "This is a dependency"}
+
 
 @cbv(router)
 class ChatRoute:
     """Chat-related routes."""
 
-    def __init__(self):
+    def __init__(self):  # type: ignore
         self.common_dep = common_dependency()
         self.service = ChatService()
 
@@ -32,13 +34,11 @@ class ChatRoute:
     async def chat(
         self,
         request: Request,
-        sleep: float = 1,
+        sleep: float = 1.0,
         number: int = 10,
-    ):
+    ) -> AppStreamingResponse:
         """Stream chat tokens based on query parameters."""
-        sleep = request.query_params.get("sleep", sleep)
-        number = request.query_params.get("number", number)
-        chat_request = ChatRequest(sleep=float(sleep), number=int(number))
+        chat_request = ChatRequest(sleep=sleep, number=number)
         data = await self.service.chat_service(request_params=chat_request)
         return AppStreamingResponse(data_stream=data)
 
@@ -50,18 +50,16 @@ class ChatRoute:
     async def chat_websearch(
         self,
         request: Request,
-        question: str = None,
-        thread_id: str = None,
-    ):
+        question: str | None = None,
+        thread_id: str | None = None,
+    ) -> AppStreamingResponse:
         """Stream chat tokens based on query parameters."""
-        question = request.query_params.get("question", question)
-        thread_id = request.query_params.get("thread_id", thread_id)
         chat_request = WebSearchChatRequest(question=question, thread_id=thread_id)
         data = await self.service.chat_websearch_service(request_params=chat_request)
         return AppStreamingResponse(data_stream=data)
 
     @router.post("/celery/summary")
-    async def celery_summary(self, request_params: SummaryRequest):
+    async def celery_summary(self, request_params: SummaryRequest) -> AppJSONResponse:
         """Submit text for summary task."""
         data, message, status_code = await self.service.submit_summary_task(
             text=request_params.text,
@@ -71,8 +69,8 @@ class ChatRoute:
     @router.get("/celery/summary/status")
     async def celery_summary_status(
         self,
-        task_id: str = None,
-    ):
+        task_id: str | None = None,
+    ) -> AppJSONResponse:
         """Get status and result of a Celery summary task."""
         data, message, status_code = await self.service.summary_status(task_id=task_id)
         return AppJSONResponse(data=data, message=message, status_code=status_code)

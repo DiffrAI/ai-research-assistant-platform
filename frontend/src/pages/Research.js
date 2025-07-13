@@ -30,7 +30,7 @@ const Research = () => {
     try {
       const response = await researchAPI.conductResearch({
         query: data.query,
-        max_results: data.max_results || 10,
+        max_results: parseInt(data.max_results) || 10,
         include_citations: true,
       });
 
@@ -145,7 +145,7 @@ const Research = () => {
                 Max Results
               </label>
               <select
-                {...register('max_results')}
+                {...register('max_results', { valueAsNumber: true })}
                 className="input-field"
                 defaultValue={10}
               >

@@ -1,5 +1,6 @@
 """Research controller for AI Research Assistant Platform."""
 
+from typing import Any, List
 
 from fastapi import Depends, HTTPException
 from fastapi.responses import FileResponse
@@ -25,7 +26,7 @@ def get_research_service() -> ResearchService:
     return ResearchService()
 
 
-def get_user_id_from_token(current_user: User = Depends(get_current_user)):
+def get_user_id_from_token(current_user: User = Depends(get_current_user)) -> str:
     """Get user ID from JWT token."""
     return str(current_user.id)
 
@@ -39,10 +40,11 @@ async def conduct_research(
     research_request: ResearchRequest,
     research_service: ResearchService = Depends(get_research_service),
     user_id: str = Depends(get_user_id_from_token),
-):
+) -> AppJSONResponse:
     """Conduct AI-powered research with web search and citations."""
     response, message, status_code = await research_service.conduct_research(
-        user_id, research_request,
+        user_id,
+        research_request,
     )
 
     if status_code != 200:
@@ -64,7 +66,7 @@ async def conduct_research_stream(
     max_results: int = 10,
     research_service: ResearchService = Depends(get_research_service),
     user_id: str = Depends(get_user_id_from_token),
-):
+) -> AppJSONResponse:
     """Stream research results in real-time."""
     research_request = ResearchRequest(
         query=query,
@@ -73,7 +75,8 @@ async def conduct_research_stream(
     )
 
     response, message, status_code = await research_service.conduct_research(
-        user_id, research_request,
+        user_id,
+        research_request,
     )
 
     if status_code != 200:
@@ -92,28 +95,30 @@ async def save_research(
     tags: list[str] | None = None,
     research_service: ResearchService = Depends(get_research_service),
     user_id: str = Depends(get_user_id_from_token),
-):
+) -> AppJSONResponse:
     """Save research results for later reference."""
     saved_research, message, status_code = await research_service.save_research(
-        user_id, research_response, tags,
+        user_id,
+        research_response,
+        tags,
     )
 
     if status_code != 200:
         raise HTTPException(status_code=status_code, detail=message)
 
     return AppJSONResponse(
-        data=saved_research.model_dump(),
+        data=saved_research.model_dump() if saved_research else {},
         message=message,
         status_code=status_code,
     )
 
 
 @router.get("/research/saved")
-async def get_saved_research():
+async def get_saved_research() -> AppJSONResponse:
     """Get user's saved research sessions."""
     # TODO: Implement actual saved research retrieval
     # For demo, return empty list
-    saved_researches = []
+    saved_researches: List[Any] = []
 
     return AppJSONResponse(
         data={"researches": saved_researches, "total": 0},
@@ -126,7 +131,7 @@ async def get_saved_research():
 async def get_subscription_info(
     research_service: ResearchService = Depends(get_research_service),
     user_id: str = Depends(get_user_id_from_token),
-):
+) -> AppJSONResponse:
     """Get user's subscription information and usage."""
     subscription = await research_service.get_user_subscription(user_id)
 
@@ -141,15 +146,17 @@ async def get_subscription_info(
 async def export_research(
     export_request: ExportRequest,
     research_service: ResearchService = Depends(get_research_service),
-):
+) -> FileResponse:
     """Export research results in various formats."""
-    content, filename, status_code = await research_service.export_research(export_request)
+    content, filename, status_code = await research_service.export_research(
+        export_request
+    )
 
     if status_code != 200:
         raise HTTPException(status_code=status_code, detail=filename)
 
     return FileResponse(
-        content=content,
+        response_content=content,
         filename=filename,
         media_type="application/octet-stream",
     )
@@ -158,7 +165,7 @@ async def export_research(
 @router.get("/research/trending")
 async def get_trending_topics(
     limit: int = 10,
-):
+) -> AppJSONResponse:
     """Get trending research topics."""
     # TODO: Implement trending topics analysis
     # For demo, return sample trending topics
@@ -178,7 +185,7 @@ async def get_trending_topics(
 
 
 @router.get("/research/analytics")
-async def get_research_analytics():
+async def get_research_analytics() -> AppJSONResponse:
     """Get user's research analytics."""
     # TODO: Implement actual analytics
     # For demo, return sample analytics

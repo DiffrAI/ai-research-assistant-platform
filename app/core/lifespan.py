@@ -1,6 +1,7 @@
 """Application lifecycle management."""
 
 from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from loguru import logger
@@ -10,7 +11,7 @@ from .middlewares.rate_limiter import init_rate_limiter
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI):
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     """Handle application startup and shutdown events."""
     logger.info("🚀 Application starting up...")
     await init_rate_limiter()

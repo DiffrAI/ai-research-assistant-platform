@@ -3,7 +3,7 @@
 import contextvars
 import time
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Awaitable, Callable, Dict, Optional
 
 from loguru import logger
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -13,8 +13,8 @@ from starlette.responses import Response
 from app.core.config import AppEnvs, settings
 
 # Context variable to store request ID per request
-request_id_ctx_var = contextvars.ContextVar("request_id", default=None)
-request_start_time_ctx_var = contextvars.ContextVar("request_start_time", default=None)
+request_id_ctx_var = contextvars.ContextVar("request_id", default="")
+request_start_time_ctx_var = contextvars.ContextVar("request_start_time", default=0.0)
 
 # Determine the environment
 APP_ENV = settings.ENVIRONMENT.lower()
@@ -24,15 +24,12 @@ def add_request_context_to_log(record: Dict[str, Any]) -> None:
     """Inject request context into log records."""
     record["extra"]["request_id"] = request_id_ctx_var.get() or "N/A"
     record["extra"]["function_id"] = record["extra"].get("function_id", "N/A")
-    
+
     # Add request timing if available
     start_time = request_start_time_ctx_var.get()
     if start_time:
         record["extra"]["request_duration"] = time.time() - start_time
 
-
-# Configure logger with context patcher
-logger.configure(patcher=add_request_context_to_log)  # type: ignore
 
 # Define enhanced log format
 LOG_FORMAT = (
@@ -44,23 +41,15 @@ LOG_FORMAT = (
     "<level>{message}</level>\n"
 )
 
-# Remove default logger and add our custom configuration
-logger.remove()
-logger.add(
-    sink=lambda msg: print(msg, end=""),
-    format=LOG_FORMAT,
-    level=settings.LOG_LEVEL.upper(),
-    enqueue=True,
-    colorize=True,
-    backtrace=True,
-    diagnose=True,
-)
+
+# Configure logger with context patcher
+logger.configure(patcher=add_request_context_to_log)  # type: ignore
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):
     """Enhanced middleware to log incoming HTTP requests and responses with detailed metrics."""
 
-    def __init__(self, app, exclude_paths: Optional[list[str]] = None):
+    def __init__(self, app: Any, exclude_paths: Optional[list[str]] = None):
         """Initialize middleware with optional path exclusions."""
         super().__init__(app)
         self.exclude_paths = exclude_paths or [
@@ -96,7 +85,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             "content_length": response.headers.get("content-length", "0"),
         }
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         """Process request with enhanced logging."""
         # Skip logging for excluded paths
         if self._should_skip_logging(request.url.path):
@@ -107,12 +98,12 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         request_id_ctx_var.set(request_id)
         request.state.request_id = request_id
 
-        start_time = time.time()
+        start_time: float = time.time()
         request_start_time_ctx_var.set(start_time)
 
         # Extract request information
         request_info = self._extract_request_info(request)
-        
+
         try:
             # Log request details in non-production environments
             if APP_ENV in {AppEnvs.DEVELOPMENT, AppEnvs.QA, AppEnvs.DEMO}:
@@ -128,7 +119,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
                 logger.debug(
                     f"📥 Request: {request_info['method']} {request_info['path']}",
-                    extra={"request_info": request_info}
+                    extra={"request_info": request_info},
                 )
 
             # Process the request
@@ -144,7 +135,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                     "request_info": request_info,
                     "error": str(e),
                     "error_type": type(e).__name__,
-                }
+                },
             )
             raise
 
@@ -173,7 +164,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 "request_info": request_info,
                 "response_info": response_info,
                 "duration": duration,
-            }
+            },
         )
 
         return response

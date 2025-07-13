@@ -15,7 +15,8 @@ class AppStreamingResponse(StreamingResponse):
 
     def __init__(
         self,
-        data_stream: Callable[[], AsyncGenerator[Any, None]] | AsyncGenerator[Any, None],
+        data_stream: Callable[[], AsyncGenerator[Any, None]]
+        | AsyncGenerator[Any, None],
         status_code: int = 200,
     ):
         """Args:

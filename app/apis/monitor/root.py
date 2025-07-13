@@ -13,6 +13,6 @@ root_router = APIRouter()
     description="Redirects the root path to the interactive API documentation for the AI Research Assistant Platform.",
     response_description="Redirect response to the Swagger UI documentation",
 )
-async def root():
+async def root() -> RedirectResponse:
     """Redirects to the AI Research Assistant Platform API documentation."""
     return RedirectResponse(url="/docs")

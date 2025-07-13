@@ -13,6 +13,6 @@ metrics_router = APIRouter()
     description="Expose Prometheus metrics for monitoring the AI Research Assistant Platform",
     response_description="Prometheus-formatted metrics data",
 )
-async def metrics():
+async def metrics() -> Response:
     """Return Prometheus-formatted metrics response."""
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)

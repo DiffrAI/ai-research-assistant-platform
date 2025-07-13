@@ -20,7 +20,8 @@ class UserService:
 
     @trace(name="create_user_service")
     async def create_user_service(
-        self, request_params: CreateUserRequest,
+        self,
+        request_params: CreateUserRequest,
     ) -> tuple[Any, str, int]:
         """Create a new user from request parameters."""
         await self.sample_function(temp_arg=request_params.name)

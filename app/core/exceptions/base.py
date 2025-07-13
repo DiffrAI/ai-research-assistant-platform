@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 class ErrorDetails(BaseModel):
     """Structured error details for better error handling."""
-    
+
     code: str
     message: str
     details: Optional[Dict[str, Any]] = None
@@ -31,7 +31,7 @@ class CustomError(Exception):
         self.error_code = error_code
         self.payload = payload
         self.error_log = error_log
-        self.details = details or {}
+        self.details = details if details is not None else {}
 
     def __str__(self) -> str:
         return (
@@ -61,73 +61,85 @@ class CustomError(Exception):
 
 class ValidationError(CustomError):
     """Raised when input validation fails."""
-    
-    def __init__(self, message: str, field: Optional[str] = None, **kwargs):
+
+    def __init__(self, message: str, field: Optional[str] = None, **kwargs: Any):
         super().__init__(
             message=message,
             status_code=422,
             error_code="VALIDATION_ERROR",
             details={"field": field} if field else {},
-            **kwargs
+            **kwargs,
         )
 
 
 class AuthenticationError(CustomError):
     """Raised when authentication fails."""
-    
-    def __init__(self, message: str = "Authentication failed", **kwargs):
+
+    def __init__(self, message: str = "Authentication failed", **kwargs: Any):
         super().__init__(
             message=message,
             status_code=401,
             error_code="AUTHENTICATION_ERROR",
-            **kwargs
+            **kwargs,
         )
 
 
 class AuthorizationError(CustomError):
     """Raised when authorization fails."""
-    
-    def __init__(self, message: str = "Access denied", **kwargs):
+
+    def __init__(self, message: str = "Access denied", **kwargs: Any):
         super().__init__(
-            message=message,
-            status_code=403,
-            error_code="AUTHORIZATION_ERROR",
-            **kwargs
+            message=message, status_code=403, error_code="AUTHORIZATION_ERROR", **kwargs
         )
 
 
 class RateLimitError(CustomError):
     """Raised when rate limit is exceeded."""
-    
-    def __init__(self, message: str = "Rate limit exceeded", retry_after: Optional[int] = None, **kwargs):
+
+    def __init__(
+        self,
+        message: str = "Rate limit exceeded",
+        retry_after: Optional[int] = None,
+        **kwargs: Any,
+    ):
         details = {"retry_after": retry_after} if retry_after else {}
         super().__init__(
             message=message,
             status_code=429,
             error_code="RATE_LIMIT_ERROR",
             details=details,
-            **kwargs
+            **kwargs,
         )
 
 
 class ResourceNotFoundError(CustomError):
     """Raised when a requested resource is not found."""
-    
-    def __init__(self, message: str = "Resource not found", resource_type: Optional[str] = None, **kwargs):
+
+    def __init__(
+        self,
+        message: str = "Resource not found",
+        resource_type: Optional[str] = None,
+        **kwargs: Any,
+    ):
         details = {"resource_type": resource_type} if resource_type else {}
         super().__init__(
             message=message,
             status_code=404,
             error_code="RESOURCE_NOT_FOUND",
             details=details,
-            **kwargs
+            **kwargs,
         )
 
 
 class ServiceUnavailableError(CustomError):
     """Raised when an external service is unavailable."""
-    
-    def __init__(self, message: str = "Service temporarily unavailable", service: Optional[str] = None, **kwargs):
+
+    def __init__(
+        self,
+        message: str = "Service temporarily unavailable",
+        service: Optional[str] = None,
+        **kwargs: Any,
+    ):
         # Merge details from kwargs and service
         details = kwargs.pop("details", {}) or {}
         if service:
@@ -137,5 +149,5 @@ class ServiceUnavailableError(CustomError):
             status_code=503,
             error_code="SERVICE_UNAVAILABLE",
             details=details,
-            **kwargs
+            **kwargs,
         )

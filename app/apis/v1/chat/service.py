@@ -5,7 +5,7 @@ import hashlib
 import json
 import re
 from collections.abc import AsyncGenerator, Callable
-from typing import Any
+from typing import Any, Optional
 
 from celery.result import AsyncResult
 from langchain_core.messages import AIMessageChunk, HumanMessage
@@ -32,7 +32,8 @@ class ChatService:
 
     @trace(name="chat_service")
     async def chat_service(
-        self, request_params: ChatRequest,
+        self,
+        request_params: ChatRequest,
     ) -> Callable[[], AsyncGenerator[str, None]]:
         """Return a streaming chat generator.
         If the response is cached, replay the cached stream.
@@ -76,7 +77,8 @@ class ChatService:
 
     @trace(name="chat_websearch_service")
     async def chat_websearch_service(
-        self, request_params: WebSearchChatRequest,
+        self,
+        request_params: WebSearchChatRequest,
     ) -> Callable[[], AsyncGenerator[str, None]]:
         """Handles streaming chat responses with integrated web search results."""
         # Compile the LangGraph agent
@@ -84,7 +86,7 @@ class ChatService:
 
         # Prepare initial input for agent execution
         state_input = {
-            "question": HumanMessage(content=request_params.question),
+            "question": HumanMessage(content=str(request_params.question or "")),
             "refined_question": "",
             "require_enhancement": False,
             "refined_questions": [],
@@ -100,11 +102,14 @@ class ChatService:
 
             for mode, chunk in graph.stream(
                 input=state_input,
-                config={"configurable": {"thread_id": str(request_params.thread_id)}},
+                config={
+                    "configurable": {"thread_id": str(request_params.thread_id or "")}
+                },
                 stream_mode=["messages", "custom"],
             ):
                 if mode == "custom":
-                    raw_citation_map.update(chunk.get("citation_map", {}))
+                    if isinstance(chunk, dict):
+                        raw_citation_map.update(chunk.get("citation_map", {}))
 
                 elif mode == "messages":
                     _chunk, metadata = chunk[0], chunk[1]
@@ -154,7 +159,7 @@ class ChatService:
             200,
         )
 
-    async def summary_status(self, task_id: str) -> tuple[Any, str, int]:
+    async def summary_status(self, task_id: Optional[str]) -> tuple[Any, str, int]:
         """Check the status of a summary task and return the result if available."""
         result = AsyncResult(task_id, app=celery_app)
 

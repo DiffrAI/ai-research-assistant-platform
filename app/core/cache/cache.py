@@ -7,7 +7,7 @@ from app.core.config import CacheBackend, settings
 
 if settings.CACHE_BACKEND == CacheBackend.REDIS:
     cache = Cache(
-        cache_class=Cache.REDIS,  # type: ignore
+        cache_class=Cache.REDIS,
         endpoint=settings.REDIS_HOST,
         port=settings.REDIS_PORT,
         password=settings.REDIS_PASSWORD,

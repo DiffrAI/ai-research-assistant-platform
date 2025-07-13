@@ -50,13 +50,25 @@ class UserInDB(UserBase):
     id: int = Field(..., description="User ID")
     hashed_password: str = Field(..., description="Hashed password")
     role: UserRole = Field(default=UserRole.USER, description="User role")
-    subscription_plan: SubscriptionPlan = Field(default=SubscriptionPlan.FREE, description="Current subscription plan")
-    searches_used_this_month: int = Field(default=0, description="Number of searches used this month")
+    subscription_plan: SubscriptionPlan = Field(
+        default=SubscriptionPlan.FREE, description="Current subscription plan"
+    )
+    searches_used_this_month: int = Field(
+        default=0, description="Number of searches used this month"
+    )
     searches_limit: int = Field(default=10, description="Monthly search limit")
-    subscription_expires_at: datetime | None = Field(default=None, description="Subscription expiry date")
-    stripe_customer_id: str | None = Field(default=None, description="Stripe customer ID")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Account creation date")
-    updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update date")
+    subscription_expires_at: datetime | None = Field(
+        default=None, description="Subscription expiry date"
+    )
+    stripe_customer_id: str | None = Field(
+        default=None, description="Stripe customer ID"
+    )
+    created_at: datetime = Field(
+        default_factory=datetime.utcnow, description="Account creation date"
+    )
+    updated_at: datetime = Field(
+        default_factory=datetime.utcnow, description="Last update date"
+    )
 
 
 class User(UserBase):
@@ -96,7 +108,9 @@ class SubscriptionInfo(BaseModel):
     searches_limit: int
     expires_at: datetime | None
     is_active: bool = Field(..., description="Whether subscription is active")
-    days_remaining: int | None = Field(None, description="Days until subscription expires")
+    days_remaining: int | None = Field(
+        None, description="Days until subscription expires"
+    )
 
 
 class PasswordReset(BaseModel):
@@ -150,7 +164,10 @@ def can_user_search(user: UserInDB) -> tuple[bool, str]:
     if user.searches_used_this_month >= user.searches_limit:
         return False, "Monthly search limit exceeded"
 
-    if user.subscription_expires_at and user.subscription_expires_at < datetime.utcnow():
+    if (
+        user.subscription_expires_at
+        and user.subscription_expires_at < datetime.utcnow()
+    ):
         return False, "Subscription has expired"
 
     return True, "Search allowed"

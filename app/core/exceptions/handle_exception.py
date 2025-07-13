@@ -1,6 +1,6 @@
 """Enhanced exception handling for the FastAPI application."""
 
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import HTTPException, RequestValidationError
@@ -38,14 +38,19 @@ class HandleExceptions:
         """Handle all custom exception types."""
 
         @self.app.exception_handler(CustomError)
-        async def custom_exception_handler(request: Request, exc: CustomError) -> AppJSONResponse:
-            logger.error(f"Custom error: {exc.error_code} - {exc.message}", extra={
-                "error_code": exc.error_code,
-                "status_code": exc.status_code,
-                "details": exc.details,
-                "path": request.url.path,
-                "method": request.method,
-            })
+        async def custom_exception_handler(
+            request: Request, exc: CustomError
+        ) -> AppJSONResponse:
+            logger.error(
+                f"Custom error: {exc.error_code} - {exc.message}",
+                extra={
+                    "error_code": exc.error_code,
+                    "status_code": exc.status_code,
+                    "details": exc.details,
+                    "path": request.url.path,
+                    "method": request.method,
+                },
+            )
             return await self._create_json_response(
                 status_code=exc.status_code,
                 message=exc.message,
@@ -56,12 +61,17 @@ class HandleExceptions:
             )
 
         @self.app.exception_handler(ValidationError)
-        async def validation_exception_handler(request: Request, exc: ValidationError) -> AppJSONResponse:
-            logger.warning(f"Validation error: {exc.message}", extra={
-                "field": exc.details.get("field"),
-                "path": request.url.path,
-                "method": request.method,
-            })
+        async def validation_exception_handler(
+            request: Request, exc: ValidationError
+        ) -> AppJSONResponse:
+            logger.warning(
+                f"Validation error: {exc.message}",
+                extra={
+                    "field": exc.details.get("field"),
+                    "path": request.url.path,
+                    "method": request.method,
+                },
+            )
             return await self._create_json_response(
                 status_code=exc.status_code,
                 message=exc.message,
@@ -70,11 +80,16 @@ class HandleExceptions:
             )
 
         @self.app.exception_handler(AuthenticationError)
-        async def authentication_exception_handler(request: Request, exc: AuthenticationError) -> AppJSONResponse:
-            logger.warning(f"Authentication error: {exc.message}", extra={
-                "path": request.url.path,
-                "method": request.method,
-            })
+        async def authentication_exception_handler(
+            request: Request, exc: AuthenticationError
+        ) -> AppJSONResponse:
+            logger.warning(
+                f"Authentication error: {exc.message}",
+                extra={
+                    "path": request.url.path,
+                    "method": request.method,
+                },
+            )
             return await self._create_json_response(
                 status_code=exc.status_code,
                 message=exc.message,
@@ -82,11 +97,16 @@ class HandleExceptions:
             )
 
         @self.app.exception_handler(AuthorizationError)
-        async def authorization_exception_handler(request: Request, exc: AuthorizationError) -> AppJSONResponse:
-            logger.warning(f"Authorization error: {exc.message}", extra={
-                "path": request.url.path,
-                "method": request.method,
-            })
+        async def authorization_exception_handler(
+            request: Request, exc: AuthorizationError
+        ) -> AppJSONResponse:
+            logger.warning(
+                f"Authorization error: {exc.message}",
+                extra={
+                    "path": request.url.path,
+                    "method": request.method,
+                },
+            )
             return await self._create_json_response(
                 status_code=exc.status_code,
                 message=exc.message,
@@ -94,12 +114,17 @@ class HandleExceptions:
             )
 
         @self.app.exception_handler(RateLimitError)
-        async def rate_limit_exception_handler(request: Request, exc: RateLimitError) -> AppJSONResponse:
-            logger.warning(f"Rate limit exceeded: {exc.message}", extra={
-                "retry_after": exc.details.get("retry_after"),
-                "path": request.url.path,
-                "method": request.method,
-            })
+        async def rate_limit_exception_handler(
+            request: Request, exc: RateLimitError
+        ) -> AppJSONResponse:
+            logger.warning(
+                f"Rate limit exceeded: {exc.message}",
+                extra={
+                    "retry_after": exc.details.get("retry_after"),
+                    "path": request.url.path,
+                    "method": request.method,
+                },
+            )
             return await self._create_json_response(
                 status_code=exc.status_code,
                 message=exc.message,
@@ -108,12 +133,17 @@ class HandleExceptions:
             )
 
         @self.app.exception_handler(ResourceNotFoundError)
-        async def resource_not_found_exception_handler(request: Request, exc: ResourceNotFoundError) -> AppJSONResponse:
-            logger.info(f"Resource not found: {exc.message}", extra={
-                "resource_type": exc.details.get("resource_type"),
-                "path": request.url.path,
-                "method": request.method,
-            })
+        async def resource_not_found_exception_handler(
+            request: Request, exc: ResourceNotFoundError
+        ) -> AppJSONResponse:
+            logger.info(
+                f"Resource not found: {exc.message}",
+                extra={
+                    "resource_type": exc.details.get("resource_type"),
+                    "path": request.url.path,
+                    "method": request.method,
+                },
+            )
             return await self._create_json_response(
                 status_code=exc.status_code,
                 message=exc.message,
@@ -122,12 +152,17 @@ class HandleExceptions:
             )
 
         @self.app.exception_handler(ServiceUnavailableError)
-        async def service_unavailable_exception_handler(request: Request, exc: ServiceUnavailableError) -> AppJSONResponse:
-            logger.error(f"Service unavailable: {exc.message}", extra={
-                "service": exc.details.get("service"),
-                "path": request.url.path,
-                "method": request.method,
-            })
+        async def service_unavailable_exception_handler(
+            request: Request, exc: ServiceUnavailableError
+        ) -> AppJSONResponse:
+            logger.error(
+                f"Service unavailable: {exc.message}",
+                extra={
+                    "service": exc.details.get("service"),
+                    "path": request.url.path,
+                    "method": request.method,
+                },
+            )
             return await self._create_json_response(
                 status_code=exc.status_code,
                 message=exc.message,
@@ -139,18 +174,23 @@ class HandleExceptions:
         """Handle Pydantic validation errors with detailed field information."""
 
         @self.app.exception_handler(RequestValidationError)
-        async def pydantic_exception_handler(request: Request, exc: RequestValidationError) -> AppJSONResponse:
+        async def pydantic_exception_handler(
+            request: Request, exc: RequestValidationError
+        ) -> AppJSONResponse:
             # Extract field-specific errors
             field_errors = {}
             for error in exc.errors():
                 field = " -> ".join(str(loc) for loc in error["loc"])
                 field_errors[field] = error["msg"]
 
-            logger.warning(f"Pydantic validation error: {len(field_errors)} field(s) failed", extra={
-                "field_errors": field_errors,
-                "path": request.url.path,
-                "method": request.method,
-            })
+            logger.warning(
+                f"Pydantic validation error: {len(field_errors)} field(s) failed",
+                extra={
+                    "field_errors": field_errors,
+                    "path": request.url.path,
+                    "method": request.method,
+                },
+            )
 
             return await self._create_json_response(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -164,16 +204,21 @@ class HandleExceptions:
         """Handle FastAPI HTTP exceptions with rate limit support."""
 
         @self.app.exception_handler(HTTPException)
-        async def fastapi_http_exception_handler(request: Request, exc: HTTPException) -> AppJSONResponse:
+        async def fastapi_http_exception_handler(
+            request: Request, exc: HTTPException
+        ) -> AppJSONResponse:
             if exc.status_code == 429:
                 headers = getattr(exc, "headers", {})
                 retry_after = int(headers.get("Retry-After", 60))
 
-                logger.warning(f"Rate limit exceeded: retry after {retry_after}s", extra={
-                    "retry_after": retry_after,
-                    "path": request.url.path,
-                    "method": request.method,
-                })
+                logger.warning(
+                    f"Rate limit exceeded: retry after {retry_after}s",
+                    extra={
+                        "retry_after": retry_after,
+                        "path": request.url.path,
+                        "method": request.method,
+                    },
+                )
 
                 return await self._create_json_response(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -183,11 +228,14 @@ class HandleExceptions:
                     details={"retry_after": retry_after},
                 )
 
-            logger.info(f"HTTP exception: {exc.status_code} - {exc.detail}", extra={
-                "status_code": exc.status_code,
-                "path": request.url.path,
-                "method": request.method,
-            })
+            logger.info(
+                f"HTTP exception: {exc.status_code} - {exc.detail}",
+                extra={
+                    "status_code": exc.status_code,
+                    "path": request.url.path,
+                    "method": request.method,
+                },
+            )
 
             return await self._create_json_response(
                 status_code=exc.status_code,
@@ -199,12 +247,17 @@ class HandleExceptions:
         """Handle all other exceptions with comprehensive logging."""
 
         @self.app.exception_handler(Exception)
-        async def default_exception_handler(request: Request, exc: Exception) -> AppJSONResponse:
-            logger.exception(f"Unhandled exception: {type(exc).__name__}: {exc}", extra={
-                "exception_type": type(exc).__name__,
-                "path": request.url.path,
-                "method": request.method,
-            })
+        async def default_exception_handler(
+            request: Request, exc: Exception
+        ) -> AppJSONResponse:
+            logger.exception(
+                f"Unhandled exception: {type(exc).__name__}: {exc}",
+                extra={
+                    "exception_type": type(exc).__name__,
+                    "path": request.url.path,
+                    "method": request.method,
+                },
+            )
 
             return await self._create_json_response(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -220,7 +273,7 @@ class HandleExceptions:
         payload: Any = None,
         error_log: Any = None,
         error_code: str = "ERROR",
-        details: dict = None,
+        details: Optional[dict[Any, Any]] = None,
     ) -> AppJSONResponse:
         """Create a JSON response for exceptions with enhanced error information."""
         if error_log:
@@ -232,5 +285,5 @@ class HandleExceptions:
             status_code=status_code,
             error=error_log,
             error_code=error_code,
-            details=details,
+            details=details if details is not None else {},
         )

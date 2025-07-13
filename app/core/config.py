@@ -51,53 +51,96 @@ class SearchProvider(str, enum.Enum):
 
 class DatabaseConfig(BaseModel):
     """Database configuration settings."""
-    
-    url: str = Field(default="sqlite+aiosqlite:///./ai_research.db", description="Database connection URL")
+
+    url: str = Field(
+        default="sqlite+aiosqlite:///./ai_research.db",
+        description="Database connection URL",
+    )
     pool_size: int = Field(default=10, ge=1, le=100, description="Connection pool size")
-    max_overflow: int = Field(default=20, ge=0, le=100, description="Maximum overflow connections")
-    pool_timeout: int = Field(default=30, ge=1, le=300, description="Connection pool timeout in seconds")
-    pool_recycle: int = Field(default=3600, ge=60, le=7200, description="Connection pool recycle time in seconds")
+    max_overflow: int = Field(
+        default=20, ge=0, le=100, description="Maximum overflow connections"
+    )
+    pool_timeout: int = Field(
+        default=30, ge=1, le=300, description="Connection pool timeout in seconds"
+    )
+    pool_recycle: int = Field(
+        default=3600,
+        ge=60,
+        le=7200,
+        description="Connection pool recycle time in seconds",
+    )
 
 
 class RedisConfig(BaseModel):
     """Redis configuration settings."""
-    
+
     host: str = Field(default="localhost", description="Redis host")
     port: int = Field(default=6379, ge=1, le=65535, description="Redis port")
     password: Optional[str] = Field(default=None, description="Redis password")
     db: int = Field(default=0, ge=0, le=15, description="Redis database number")
-    max_connections: int = Field(default=10, ge=1, le=100, description="Maximum Redis connections")
+    max_connections: int = Field(
+        default=10, ge=1, le=100, description="Maximum Redis connections"
+    )
 
 
 class LocalModelConfig(BaseModel):
     """Local model configuration settings."""
-    
-    url: str = Field(default="http://127.0.0.1:11434", description="Local model API URL")
+
+    url: str = Field(
+        default="http://127.0.0.1:11434", description="Local model API URL"
+    )
     name: str = Field(default="qwen2.5:7b", description="Local model name")
-    temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Model temperature")
-    max_tokens: int = Field(default=2000, ge=1, le=10000, description="Maximum tokens per response")
-    timeout: int = Field(default=30, ge=1, le=300, description="Request timeout in seconds")
+    temperature: float = Field(
+        default=0.7, ge=0.0, le=2.0, description="Model temperature"
+    )
+    max_tokens: int = Field(
+        default=2000, ge=1, le=10000, description="Maximum tokens per response"
+    )
+    timeout: int = Field(
+        default=30, ge=1, le=300, description="Request timeout in seconds"
+    )
 
 
 class SearchConfig(BaseModel):
     """Search configuration settings."""
-    
-    provider: SearchProvider = Field(default=SearchProvider.DUCKDUCKGO, description="Search provider")
-    max_results: int = Field(default=10, ge=1, le=50, description="Maximum search results")
-    max_retries: int = Field(default=5, ge=1, le=10, description="Maximum search retries")
-    base_delay: float = Field(default=1.0, ge=0.1, le=10.0, description="Base delay for exponential backoff")
-    max_delay: float = Field(default=10.0, ge=1.0, le=60.0, description="Maximum delay for exponential backoff")
+
+    provider: SearchProvider = Field(
+        default=SearchProvider.DUCKDUCKGO, description="Search provider"
+    )
+    max_results: int = Field(
+        default=10, ge=1, le=50, description="Maximum search results"
+    )
+    max_retries: int = Field(
+        default=5, ge=1, le=10, description="Maximum search retries"
+    )
+    base_delay: float = Field(
+        default=1.0, ge=0.1, le=10.0, description="Base delay for exponential backoff"
+    )
+    max_delay: float = Field(
+        default=10.0,
+        ge=1.0,
+        le=60.0,
+        description="Maximum delay for exponential backoff",
+    )
     timeout: int = Field(default=30, ge=5, le=120, description="Search request timeout")
 
 
 class SecurityConfig(BaseModel):
     """Security configuration settings."""
-    
-    secret_key: str = Field(default="your-secret-key-change-in-production", description="JWT secret key")
+
+    secret_key: str = Field(
+        default="your-secret-key-change-in-production", description="JWT secret key"
+    )
     algorithm: str = Field(default="HS256", description="JWT algorithm")
-    access_token_expire_minutes: int = Field(default=30, ge=1, le=1440, description="Access token expiry in minutes")
-    refresh_token_expire_days: int = Field(default=7, ge=1, le=365, description="Refresh token expiry in days")
-    password_min_length: int = Field(default=8, ge=6, le=128, description="Minimum password length")
+    access_token_expire_minutes: int = Field(
+        default=30, ge=1, le=1440, description="Access token expiry in minutes"
+    )
+    refresh_token_expire_days: int = Field(
+        default=7, ge=1, le=365, description="Refresh token expiry in days"
+    )
+    password_min_length: int = Field(
+        default=8, ge=6, le=128, description="Minimum password length"
+    )
 
 
 class AppConfig(BaseSettings):
@@ -288,19 +331,21 @@ class AppConfig(BaseSettings):
 
     @field_validator("worker_count", mode="before")
     @classmethod
-    def validate_worker_count(cls, v):
+    def validate_worker_count(cls, v: Optional[int]) -> int:
         """Validate worker count based on environment."""
         if v is None:
             import multiprocessing
+
             return multiprocessing.cpu_count() * 2 + 1
         return v
 
     @field_validator("security")
     @classmethod
-    def validate_secret_key(cls, v):
+    def validate_secret_key(cls, v: "SecurityConfig") -> "SecurityConfig":
         """Ensure secret key is changed in production."""
         if v.secret_key == "your-secret-key-change-in-production":
             import os
+
             if os.getenv("ENVIRONMENT") == "production":
                 raise ValueError("SECRET_KEY must be changed in production")
         return v

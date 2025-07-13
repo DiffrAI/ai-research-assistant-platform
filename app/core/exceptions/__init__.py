@@ -14,7 +14,7 @@ from .handle_exception import HandleExceptions
 
 __all__ = [
     "CustomError",
-    "ValidationError", 
+    "ValidationError",
     "AuthenticationError",
     "AuthorizationError",
     "RateLimitError",

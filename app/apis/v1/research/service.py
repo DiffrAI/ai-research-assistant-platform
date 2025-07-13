@@ -12,13 +12,11 @@ from loguru import logger
 from app import cache, trace
 from app.core.exceptions import (
     RateLimitError,
-    ResourceNotFoundError,
     ServiceUnavailableError,
     ValidationError,
 )
 from app.workflows.graphs.websearch import WebSearchAgentGraph
 from app.workflows.graphs.websearch.components.answer_generator import AnswerGenerator
-from app.workflows.graphs.websearch.components.question_rewriter import QuestionRewriter
 from app.workflows.graphs.websearch.components.websearch_executor import (
     WebSearchExecutor,
 )
@@ -36,13 +34,6 @@ from .models import (
 class ResearchService:
     """Enhanced service for handling research logic and business rules."""
 
-    def __init__(self):
-        """Initialize the research service with components."""
-        self.graph = WebSearchAgentGraph().compile()
-        self.answer_generator = AnswerGenerator()
-        self.question_rewriter = QuestionRewriter()
-        self.websearch_executor = WebSearchExecutor()
-
     @staticmethod
     def _hash_request(payload: Dict[str, Any]) -> str:
         """Generate a unique cache key from request payload."""
@@ -55,15 +46,19 @@ class ResearchService:
         """Validate research request parameters."""
         if not request.query or not request.query.strip():
             raise ValidationError("Query cannot be empty", field="query")
-        
+
         if len(request.query.strip()) < 3:
-            raise ValidationError("Query must be at least 3 characters long", field="query")
-        
+            raise ValidationError(
+                "Query must be at least 3 characters long", field="query"
+            )
+
         if len(request.query.strip()) > 1000:
             raise ValidationError("Query too long (max 1000 characters)", field="query")
-        
+
         if request.max_results < 1 or request.max_results > 50:
-            raise ValidationError("Max results must be between 1 and 50", field="max_results")
+            raise ValidationError(
+                "Max results must be between 1 and 50", field="max_results"
+            )
 
     @staticmethod
     def _check_user_limits(user_id: str) -> Tuple[bool, str]:
@@ -80,20 +75,22 @@ class ResearchService:
 
     @trace(name="research_service")
     async def conduct_research(
-        self, user_id: str, request: ResearchRequest,
+        self,
+        user_id: str,
+        request: ResearchRequest,
     ) -> Tuple[Optional[ResearchResponse], str, int]:
         """Conduct research using AI and web search with enhanced error handling."""
         try:
             # Validate request
             self._validate_research_request(request)
-            
+
             # Check user limits
             allowed, message = self._check_user_limits(user_id)
             if not allowed:
                 raise RateLimitError(
                     message=message,
                     retry_after=60,
-                    details={"user_id": user_id, "limit_type": "search_quota"}
+                    details={"user_id": user_id, "limit_type": "search_quota"},
                 )
 
             # Check cache first
@@ -101,7 +98,11 @@ class ResearchService:
             cached_response = await cache.get(cache_key)
             if cached_response:
                 logger.info("Cache hit for research query")
-                return ResearchResponse.model_validate(json.loads(cached_response)), "Research completed from cache", 200
+                return (
+                    ResearchResponse.model_validate(json.loads(cached_response)),
+                    "Research completed from cache",
+                    200,
+                )
 
             start_time = time.time()
 
@@ -117,14 +118,27 @@ class ResearchService:
                 "messages": [HumanMessage(content=request.query)],
             }
 
+            # Create a new WebSearchExecutor with the desired max_results
+            searcher = WebSearchExecutor(max_results=request.max_results)
+
+            # Create a new graph with the searcher
+            graph = WebSearchAgentGraph(searcher=searcher).compile()
+
             # Run the research workflow
-            final_state = await self._run_research_workflow(state_input, request.max_results, user_id)
+            final_state = await graph.ainvoke(
+                state_input,
+                config={"configurable": {"thread_id": user_id}},
+            )
 
             # Process results
-            results = self._process_search_results(final_state.get("search_results", []))
+            results = self._process_search_results(
+                final_state.get("search_results", [])
+            )
 
             # Extract summary from messages
-            summary = self._extract_summary_from_messages(final_state.get("messages", []))
+            summary = self._extract_summary_from_messages(
+                final_state.get("messages", [])
+            )
 
             # Calculate search time
             search_time = time.time() - start_time
@@ -137,57 +151,37 @@ class ResearchService:
                 citations=self._extract_citations(results),
                 total_results=len(results),
                 search_time=search_time,
-                model_used="local" if hasattr(self.answer_generator, "llm") else "openai",
+                model_used="local" if hasattr(AnswerGenerator(), "llm") else "openai",
             )
 
             # Cache the response with appropriate TTL
-            cache_ttl = 3600 if len(results) > 0 else 300  # 1 hour for good results, 5 min for empty
+            cache_ttl = (
+                3600 if len(results) > 0 else 300
+            )  # 1 hour for good results, 5 min for empty
             await cache.set(cache_key, response.model_dump_json(), ttl=cache_ttl)
 
             # Increment user usage
             self._increment_user_usage(user_id)
 
-            logger.info(f"Research completed successfully in {search_time:.2f}s with {len(results)} results")
+            logger.info(
+                f"Research completed successfully in {search_time:.2f}s with {len(results)} results"
+            )
             return response, "Research completed successfully", 200
 
         except (ValidationError, RateLimitError) as e:
             # Re-raise validation and rate limit errors
-            raise
+            raise e
         except Exception as e:
             logger.exception(f"Error in research service: {e}")
             raise ServiceUnavailableError(
                 message="Research service temporarily unavailable",
                 service="research",
-                details={"error": str(e)}
-            )
+                details={"error": str(e)},
+            ) from e
 
-    async def _run_research_workflow(self, state_input: Dict[str, Any], max_results: int, user_id: str) -> Dict[str, Any]:
-        """Run the research workflow using LangGraph with error handling."""
-        # Override max results for this search
-        original_max_results = getattr(self.websearch_executor, "max_results", 10)
-        self.websearch_executor.max_results = max_results
-
-        try:
-            # Run the workflow with configurable key for in-memory checkpointer
-            logger.info(f"Starting research workflow with input: {state_input}")
-            final_state = await self.graph.ainvoke(
-                state_input,
-                config={"configurable": {"thread_id": user_id}},
-            )
-            logger.info(f"Research workflow completed with final state keys: {list(final_state.keys())}")
-            return final_state
-        except Exception as e:
-            logger.error(f"Research workflow failed: {e}")
-            raise ServiceUnavailableError(
-                message="Research workflow failed",
-                service="websearch",
-                details={"error": str(e)}
-            )
-        finally:
-            # Restore original max results
-            self.websearch_executor.max_results = original_max_results
-
-    def _process_search_results(self, raw_results: List[Dict[str, Any]]) -> List[ResearchResult]:
+    def _process_search_results(
+        self, raw_results: List[Dict[str, Any]]
+    ) -> List[ResearchResult]:
         """Process raw search results into structured format with validation."""
         processed_results = []
 
@@ -211,14 +205,14 @@ class ResearchService:
         """Extract summary from messages with fallback."""
         if not messages:
             return "No summary available"
-        
+
         # Get the last AI message which should contain the summary
         for message in reversed(messages):
             if hasattr(message, "content") and message.content:
                 content = message.content.strip()
                 if content and len(content) > 10:  # Ensure meaningful content
                     return content
-        
+
         return "No summary available"
 
     def _extract_citations(self, results: List[ResearchResult]) -> List[str]:
@@ -231,15 +225,22 @@ class ResearchService:
         return citations
 
     async def save_research(
-        self, user_id: str, research_response: ResearchResponse, tags: Optional[List[str]] = None,
+        self,
+        user_id: str,
+        research_response: ResearchResponse,
+        tags: Optional[List[str]] = None,
     ) -> Tuple[Optional[SavedResearch], str, int]:
         """Save research results for later reference with validation."""
         try:
             if not research_response.query:
-                raise ValidationError("Cannot save research without a query", field="query")
-            
+                raise ValidationError(
+                    "Cannot save research without a query", field="query"
+                )
+
             if not research_response.results:
-                raise ValidationError("Cannot save research without results", field="results")
+                raise ValidationError(
+                    "Cannot save research without results", field="results"
+                )
 
             research_id = str(uuid.uuid4())
             now = datetime.utcnow()
@@ -260,20 +261,20 @@ class ResearchService:
             return saved_research, "Research saved successfully", 200
 
         except ValidationError as e:
-            raise
+            raise e
         except Exception as e:
             logger.error(f"Error saving research: {e}")
             raise ServiceUnavailableError(
                 message="Failed to save research",
                 service="database",
-                details={"error": str(e)}
-            )
+                details={"error": str(e)},
+            ) from e
 
     async def get_user_subscription(self, user_id: str) -> UserSubscription:
         """Get user's subscription information with validation."""
         if not user_id:
             raise ValidationError("User ID is required", field="user_id")
-        
+
         # TODO: Implement actual subscription checking
         # For demo, return a free tier subscription
         return UserSubscription(
@@ -285,12 +286,14 @@ class ResearchService:
             is_active=True,
         )
 
-    async def export_research(self, request: ExportRequest) -> Tuple[Optional[bytes], str, int]:
+    async def export_research(
+        self, request: ExportRequest
+    ) -> Tuple[Optional[bytes], str, int]:
         """Export research results in various formats with validation."""
         try:
             if not request.research_id:
                 raise ValidationError("Research ID is required", field="research_id")
-            
+
             if request.format not in ["pdf", "docx", "markdown", "json"]:
                 raise ValidationError("Unsupported export format", field="format")
 
@@ -307,7 +310,11 @@ class ResearchService:
                 content = b"# Research Results\n\nDemo markdown export"
                 filename = f"research_{request.research_id}.md"
             elif request.format == "json":
-                content = b'{"research_id": "' + request.research_id.encode() + b'", "status": "demo"}'
+                content = (
+                    b'{"research_id": "'
+                    + request.research_id.encode()
+                    + b'", "status": "demo"}'
+                )
                 filename = f"research_{request.research_id}.json"
             else:
                 raise ValidationError("Unsupported export format", field="format")
@@ -315,11 +322,9 @@ class ResearchService:
             return content, filename, 200
 
         except ValidationError as e:
-            raise
+            raise e
         except Exception as e:
             logger.error(f"Error exporting research: {e}")
             raise ServiceUnavailableError(
-                message="Export failed",
-                service="export",
-                details={"error": str(e)}
-            )
+                message="Export failed", service="export", details={"error": str(e)}
+            ) from e
