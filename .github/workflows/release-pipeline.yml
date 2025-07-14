@@ -90,6 +90,12 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      - name: Debug: Print PATH
+        run: echo $PATH
+
+      - name: Debug: List .venv/bin
+        run: ls -l .venv/bin
+
       - name: Run linting
         run: uv run python -m ruff check . --output-format=github
 
