@@ -48,11 +48,12 @@ const Layout = ({ children }) => {
             <button
               onClick={() => setSidebarOpen(false)}
               className="text-gray-400 hover:text-gray-600"
+              aria-label="Close sidebar"
             >
               <X size={24} />
             </button>
           </div>
-          <nav className="flex-1 space-y-1 px-2 py-4">
+          <nav aria-label="Mobile navigation" className="flex-1 space-y-1 px-2 py-4">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
               return (
@@ -90,7 +91,7 @@ const Layout = ({ children }) => {
           <div className="flex h-16 items-center px-4">
             <h1 className="text-xl font-bold text-gray-900">AI Research</h1>
           </div>
-          <nav className="flex-1 space-y-1 px-2 py-4">
+          <nav aria-label="Desktop navigation" className="flex-1 space-y-1 px-2 py-4">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
               return (
@@ -135,6 +136,7 @@ const Layout = ({ children }) => {
           <button
             onClick={() => setSidebarOpen(true)}
             className="text-gray-700 hover:text-gray-900"
+            aria-label="Open sidebar"
           >
             <Menu size={24} />
           </button>
