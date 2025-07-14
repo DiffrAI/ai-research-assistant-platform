@@ -384,11 +384,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: frontend-build
-
-      - name: Unpack frontend build artifact
-        run: |
-          mkdir -p frontend/build
-          cp -r frontend-build/. frontend/build/
+          path: frontend/build
 
       - name: Create release archive
         run: |
