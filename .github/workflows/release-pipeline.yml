@@ -117,10 +117,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-reports
-          path: |
-            htmlcov/
-            coverage.xml
-            bandit-report.json
+          path: htmlcov/ coverage.xml bandit-report.json
 
   frontend-checks:
     name: Frontend Quality Checks
