@@ -11,7 +11,9 @@ jest.mock('react-hot-toast');
 
 const renderWithRouter = (component) => {
   return render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       {component}
     </MemoryRouter>
   );
@@ -39,14 +41,20 @@ describe('Login page', () => {
   });
 
   test('shows an error message on failed login', async () => {
-    const login = jest.fn().mockResolvedValue({ success: false, error: 'Invalid credentials' });
+    const login = jest
+      .fn()
+      .mockResolvedValue({ success: false, error: 'Invalid credentials' });
     useAuthStore.mockReturnValue({ ...useAuthStore(), login });
 
     renderWithRouter(<Login />);
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Email address'), { target: { value: 'test@example.com' } });
-      fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'wrongpassword' } });
+      fireEvent.change(screen.getByPlaceholderText('Email address'), {
+        target: { value: 'test@example.com' },
+      });
+      fireEvent.change(screen.getByPlaceholderText('Password'), {
+        target: { value: 'wrongpassword' },
+      });
       fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
     });
 
@@ -60,12 +68,19 @@ describe('Login page', () => {
     renderWithRouter(<Login />);
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Email address'), { target: { value: 'test@example.com' } });
-      fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'password' } });
+      fireEvent.change(screen.getByPlaceholderText('Email address'), {
+        target: { value: 'test@example.com' },
+      });
+      fireEvent.change(screen.getByPlaceholderText('Password'), {
+        target: { value: 'password' },
+      });
       fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
     });
 
-    expect(login).toHaveBeenCalledWith({ email: 'test@example.com', password: 'password' });
+    expect(login).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      password: 'password',
+    });
     expect(toast.success).toHaveBeenCalledWith('Login successful!');
   });
 });
