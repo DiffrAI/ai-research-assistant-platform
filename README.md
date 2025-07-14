@@ -1,3 +1,6 @@
+[![Release Pipeline](https://github.com/mahiuddinalkamal/ai-research-assistant-platform/actions/workflows/release-pipeline.yml/badge.svg)](https://github.com/mahiuddinalkamal/ai-research-assistant-platform/actions/workflows/release-pipeline.yml)
+[![Pull Request Pipeline](https://github.com/mahiuddinalkamal/ai-research-assistant-platform/actions/workflows/pr-pipeline.yml/badge.svg)](https://github.com/mahiuddinalkamal/ai-research-assistant-platform/actions/workflows/pr-pipeline.yml)
+
 # AI Research Assistant Platform
 
 A full-stack AI research platform with FastAPI backend and React frontend, featuring user authentication, subscription management, AI-powered research, and modern UI/UX.
