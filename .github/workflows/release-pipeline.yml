@@ -88,7 +88,7 @@ jobs:
           version: latest
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --extra dev
 
       - name: Debug: Print PATH
         run: echo $PATH
@@ -188,7 +188,7 @@ jobs:
           version: latest
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --extra dev
 
       - name: Configure Git
         run: |
@@ -395,7 +395,7 @@ jobs:
           version: latest
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --extra dev
 
       - name: Create source distribution
         run: uv run python -m build --sdist
@@ -497,7 +497,7 @@ jobs:
             ### Manual Installation
             ```bash
             # Install Python dependencies
-            uv sync
+            uv sync --extra dev
             
             # Install frontend dependencies
             cd frontend && npm install
