@@ -24,17 +24,17 @@ const useAuthStore = create(
         try {
           const response = await authAPI.login(credentials);
           const { access_token } = response.data.data;
-          
+
           // Store token in localStorage first
           localStorage.setItem('authToken', access_token);
-          
+
           // Get user info with the token
           const userResponse = await authAPI.getCurrentUser();
           const user = userResponse.data.data;
-          
+
           // Store user in localStorage
           localStorage.setItem('user', JSON.stringify(user));
-          
+
           set({
             user,
             token: access_token,
@@ -42,7 +42,7 @@ const useAuthStore = create(
             isLoading: false,
             error: null,
           });
-          
+
           return { success: true };
         } catch (error) {
           const errorMessage = error.response?.data?.message || 'Login failed';
@@ -57,17 +57,18 @@ const useAuthStore = create(
         try {
           const response = await authAPI.register(userData);
           const user = response.data.data;
-          
+
           set({
             user,
             isAuthenticated: false,
             isLoading: false,
             error: null,
           });
-          
+
           return { success: true };
         } catch (error) {
-          const errorMessage = error.response?.data?.message || 'Registration failed';
+          const errorMessage =
+            error.response?.data?.message || 'Registration failed';
           set({ error: errorMessage, isLoading: false });
           return { success: false, error: errorMessage };
         }
@@ -83,7 +84,7 @@ const useAuthStore = create(
           // Clear localStorage
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');
-          
+
           set({
             user: null,
             token: null,
@@ -104,7 +105,7 @@ const useAuthStore = create(
         try {
           const response = await authAPI.getCurrentUser();
           const user = response.data.data;
-          
+
           set({
             user,
             token,
@@ -135,4 +136,4 @@ const useAuthStore = create(
   )
 );
 
-export default useAuthStore; 
+export default useAuthStore;
