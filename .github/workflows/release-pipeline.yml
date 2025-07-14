@@ -22,10 +22,6 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # =============================================================================
-  # PRE-RELEASE CHECKS
-  # =============================================================================
-
   pre-release-checks:
     name: Pre-Release Checks
     runs-on: ubuntu-latest
@@ -66,45 +62,28 @@ jobs:
             echo "release-type=none" >> $GITHUB_OUTPUT
           fi
 
-  # =============================================================================
-  # QUALITY CHECKS (REUSE FROM PR PIPELINE)
-  # =============================================================================
-
   backend-checks:
     name: Backend Quality Checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-
       - name: Install uv
         uses: astral-sh/setup-uv@v1
         with:
           version: latest
-
       - name: Install dependencies
         run: uv sync --extra dev
-
-      - name: Debug: Print PATH
-        run: echo $PATH
-
-      - name: Debug: List .venv/bin
-        run: ls -l .venv/bin
-
       - name: Run linting
         run: uv run python -m ruff check . --output-format=github
-
       - name: Run type checking
         run: uv run mypy app/ --show-error-codes
-
       - name: Run security scan
         run: uv run bandit -r app/ -f json -o bandit-report.json || true
-
       - name: Run tests
         run: |
           cp docs/example.env .env
@@ -112,7 +91,6 @@ jobs:
           echo "CACHE_BACKEND=local" >> .env
           echo "RATE_LIMIT_BACKEND=local" >> .env
           uv run pytest tests/ -v --cov=app --cov-report=xml --cov-report=html
-
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         with:
@@ -154,10 +132,6 @@ jobs:
         with:
           name: frontend-build
           path: frontend/build/
-
-  # =============================================================================
-  # VERSION MANAGEMENT
-  # =============================================================================
 
   version:
     name: Version Management
@@ -296,10 +270,6 @@ jobs:
           git commit -m "chore: bump version to ${{ steps.version.outputs.new-version }}"
           git push
 
-  # =============================================================================
-  # DOCKER IMAGES
-  # =============================================================================
-
   docker-images:
     name: Build and Push Docker Images
     runs-on: ubuntu-latest
@@ -367,10 +337,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  # =============================================================================
-  # RELEASE ARTIFACTS
-  # =============================================================================
 
   release-artifacts:
     name: Create Release Artifacts
@@ -449,10 +415,6 @@ jobs:
             ai-research-assistant-${{ needs.version.outputs.new-version }}.tar.gz
             dist/
             htmlcov/
-
-  # =============================================================================
-  # GITHUB RELEASE
-  # =============================================================================
 
   create-release:
     name: Create GitHub Release
@@ -537,10 +499,6 @@ jobs:
           asset_path: dist/
           asset_name: python-packages
           asset_content_type: application/octet-stream
-
-  # =============================================================================
-  # POST-RELEASE TASKS
-  # =============================================================================
 
   post-release:
     name: Post-Release Tasks
