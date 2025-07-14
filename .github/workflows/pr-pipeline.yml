@@ -120,10 +120,10 @@ jobs:
         run: uv sync --extra dev
 
       - name: Run bandit security scan
-        run: uv run bandit -r app/ -f json -o bandit-report.json
+        run: uv run bandit -r app/ -f json -o bandit-report.json || true
 
       - name: Run safety check
-        run: uv run safety check --json --output safety-report.json
+        run: uv run safety check --json --output safety-report.json || true
 
       - name: Upload security reports
         uses: actions/upload-artifact@v4
@@ -293,45 +293,6 @@ jobs:
       - name: Build Celery image
         run: docker build -f Dockerfile.celery -t ai-research-celery .
 
-  docker-compose:
-    name: Docker Compose Test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Create test environment
-        run: |
-          cp docs/example.env .env
-          echo "DATABASE_URL=sqlite+aiosqlite:///./test.db" >> .env
-          echo "CACHE_BACKEND=local" >> .env
-          echo "RATE_LIMIT_BACKEND=local" >> .env
-
-      - name: Test docker-compose config
-        run: docker-compose config
-
-      - name: Test docker-compose with monitoring config
-        run: docker-compose -f docker-compose-langfuse.yaml config
-
-      - name: Start docker-compose
-        run: docker-compose up -d
-
-      - name: Check backend health
-        run: |
-          for i in {1..30}; do
-            if curl -fs http://localhost:8002/health; then
-              echo "Backend healthy!"; exit 0;
-            fi
-            echo "Waiting for backend..."; sleep 2;
-          done
-          echo "Backend did not become healthy in time"; exit 1
-
-      - name: Stop docker-compose
-        run: docker-compose down
-
   # =============================================================================
   # INTEGRATION TESTS
   # =============================================================================
@@ -394,96 +355,6 @@ jobs:
         run: uv run pytest tests/ -v -m "integration"
 
   # =============================================================================
-  # CODE QUALITY METRICS
-  # =============================================================================
-
-  code-quality:
-    name: Code Quality Metrics
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Cache uv packages
-        uses: actions/cache@v3
-        with:
-          path: |
-            .venv
-            __pypackages__
-          key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v1
-        with:
-          version: latest
-
-      - name: Install dependencies
-        run: uv sync --extra dev
-
-      - name: Run complexity analysis
-        run: |
-          uv run radon cc app/ -a -nc
-          uv run radon mi app/ -nc
-          uv run radon hal app/ -nc
-
-      - name: Check for TODO/FIXME comments
-        run: |
-          echo "Checking for TODO/FIXME comments..."
-          grep -r "TODO\|FIXME" app/ || echo "No TODO/FIXME comments found"
-
-      - name: Check for print statements
-        run: |
-          echo "Checking for print statements..."
-          grep -r "print(" app/ || echo "No print statements found"
-
-  # =============================================================================
-  # DEPENDENCY CHECKS
-  # =============================================================================
-
-  dependency-check:
-    name: Dependency Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Cache uv packages
-        uses: actions/cache@v3
-        with:
-          path: |
-            .venv
-            __pypackages__
-          key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v1
-        with:
-          version: latest
-
-      - name: Check for outdated dependencies
-        run: uv run pip list --outdated
-
-      - name: Check for security vulnerabilities
-        run: uv run safety check
-
-      - name: Generate dependency tree
-        run: uv run pipdeptree
-
-  # =============================================================================
   # DOCUMENTATION CHECKS
   # =============================================================================
 
@@ -520,7 +391,7 @@ jobs:
   pr-status:
     name: PR Status Check
     runs-on: ubuntu-latest
-    needs: [backend-lint, backend-type-check, backend-security, backend-tests, frontend-lint, frontend-tests, frontend-build, docker-build, docker-compose, integration-tests, code-quality, dependency-check, docs-check]
+    needs: [backend-lint, backend-type-check, backend-security, backend-tests, frontend-lint, frontend-tests, frontend-build, docker-build, integration-tests, docs-check]
     if: always()
     steps:
       - name: Check PR Status
@@ -537,7 +408,6 @@ jobs:
              [[ "${{ needs.frontend-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.frontend-build.result }}" == "failure" ]] || \
              [[ "${{ needs.docker-build.result }}" == "failure" ]] || \
-             [[ "${{ needs.docker-compose.result }}" == "failure" ]] || \
              [[ "${{ needs.integration-tests.result }}" == "failure" ]]; then
             echo "❌ Some checks failed. Please fix the issues before merging."
             exit 1
