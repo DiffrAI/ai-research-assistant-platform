@@ -1,6 +1,6 @@
 [project]
 name = "ai-research-assistant-platform"
-version = "0.7.1"
+version = "0.7.2"
 description = "AI Research Assistant Platform - A cost-effective SaaS solution for intelligent research with local models and free web search."
 authors = [
   { name = "Mahiuddin Al Kamal", email = "mahiuddinalkamal@gmail.com" }
