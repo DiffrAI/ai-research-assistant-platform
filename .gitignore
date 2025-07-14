@@ -192,6 +192,9 @@ frontend/.env.development.local
 frontend/.env.test.local
 frontend/.env.production.local
 
+# Frontend test coverage
+frontend/coverage/
+
 # Database files
 *.db
 *.sqlite
