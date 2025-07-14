@@ -62,7 +62,7 @@ jobs:
             fi
           else
             echo "should-release=false" >> $GITHUB_OUTPUT
-            echo "release-type=none" >> $GITHUB_OUTPUT
+            echo "release-type=patch" >> $GITHUB_OUTPUT
           fi
 
   backend-checks:
