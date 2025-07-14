@@ -1,6 +1,5 @@
 """Research controller for AI Research Assistant Platform."""
 
-import tempfile
 from typing import Any, List
 
 from fastapi import Depends, HTTPException
