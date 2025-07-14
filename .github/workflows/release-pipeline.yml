@@ -387,8 +387,8 @@ jobs:
 
       - name: Unpack frontend build artifact
         run: |
-          mkdir -p frontend
-          mv frontend-build frontend/build
+          mkdir -p frontend/build
+          cp -r frontend-build/. frontend/build/
 
       - name: Create release archive
         run: |
