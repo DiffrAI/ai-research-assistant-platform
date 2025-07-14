@@ -57,9 +57,9 @@ class WebSearchExecutor:
             return result
 
         flat_questions: List[str] = flatten_questions(questions)
-        assert all(
-            isinstance(q, str) for q in flat_questions
-        ), "questions must be flat list of str"
+        assert all(isinstance(q, str) for q in flat_questions), (
+            "questions must be flat list of str"
+        )
         questions = flat_questions
 
         results = []
