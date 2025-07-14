@@ -211,7 +211,7 @@ class ResearchService:
             if hasattr(message, "content") and message.content:
                 content = message.content.strip()
                 if content and len(content) > 10:  # Ensure meaningful content
-                    return content
+                    return str(content)
 
         return "No summary available"
 

@@ -4,7 +4,7 @@ from langfuse import Langfuse, get_client
 from langfuse.langchain import CallbackHandler
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, StateGraph
-from langgraph.graph.graph import CompiledGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from app import settings
 
@@ -64,7 +64,7 @@ class WebSearchAgentGraph:
             },
         )
 
-    def compile(self) -> CompiledGraph:
+    def compile(self) -> CompiledStateGraph:
         """Compile the LangGraph workflow with checkpointer."""
         return self.workflow.compile(checkpointer=checkpointer).with_config(
             {"callbacks": [langfuse_handler]},

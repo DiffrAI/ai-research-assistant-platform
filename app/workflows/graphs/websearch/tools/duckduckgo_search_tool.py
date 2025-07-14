@@ -49,7 +49,7 @@ class DuckDuckGoSearchTool(BaseTool):
         """Calculate exponential backoff delay with jitter."""
         delay = min(self._base_delay * (2**attempt), self._max_delay)
         jitter = random.uniform(0, 0.1 * delay)
-        return delay + jitter
+        return float(delay + jitter)
 
     def _is_retryable_error(self, error: Exception) -> bool:
         """Determine if an error is retryable."""

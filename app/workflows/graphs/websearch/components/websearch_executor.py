@@ -2,7 +2,7 @@
 
 import random
 import time
-from typing import Any
+from typing import Any, List
 
 from loguru import logger
 
@@ -24,13 +24,12 @@ class WebSearchExecutor:
         """Calculate exponential backoff delay with jitter."""
         delay = min(self._base_delay * (2**attempt), settings.SEARCH_MAX_DELAY)
         jitter = random.uniform(0, 0.1 * delay)
-        return delay + jitter
+        return float(delay + jitter)
 
     def search(self, state: AgentState) -> dict[str, list[dict[str, Any]]]:
         """Executes web search queries using available questions in the state with robust error handling."""
         # Handle both enhanced questions (from question_enhancer) and single refined question (from question_rewriter)
-        questions = []
-
+        questions: List[Any] = []
         # Check for refined_questions first (from question_enhancer)
         if "refined_questions" in state and state["refined_questions"]:
             questions = state["refined_questions"]
@@ -47,6 +46,21 @@ class WebSearchExecutor:
         else:
             logger.warning("No questions available for web search")
             return {"search_results": []}
+
+        def flatten_questions(qs: list[Any]) -> List[str]:
+            result: List[str] = []
+            for q in qs:
+                if isinstance(q, str):
+                    result.append(q)
+                elif isinstance(q, list):
+                    result.extend(flatten_questions(q))
+            return result
+
+        flat_questions: List[str] = flatten_questions(questions)
+        assert all(isinstance(q, str) for q in flat_questions), (
+            "questions must be flat list of str"
+        )
+        questions = flat_questions
 
         results = []
         failed_queries = []

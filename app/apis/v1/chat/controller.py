@@ -13,7 +13,7 @@ from .service import ChatService
 router = APIRouter()
 
 
-def common_dependency():
+def common_dependency() -> dict[str, str]:
     """Common dependency."""
     return {"msg": "This is a dependency"}
 

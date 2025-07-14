@@ -28,11 +28,11 @@ class AuthService:
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash."""
-        return pwd_context.verify(plain_password, hashed_password)
+        return bool(pwd_context.verify(plain_password, hashed_password))
 
     def get_password_hash(self, password: str) -> str:
         """Hash a password."""
-        return pwd_context.hash(password)
+        return str(pwd_context.hash(password))
 
     def create_access_token(
         self, data: dict[str, Any], expires_delta: timedelta | None = None
@@ -47,7 +47,7 @@ class AuthService:
             )
 
         to_encode.update({"exp": expire})
-        return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
+        return str(jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm))
 
     def verify_token(self, token: str) -> TokenData | None:
         """Verify and decode a JWT token."""
@@ -132,7 +132,11 @@ class AuthService:
             result = await db.execute(select(UserDB).where(UserDB.id == user_id))
             user = result.scalar_one_or_none()
             if user:
-                user.searches_used_this_month += 1
+                object.__setattr__(
+                    user,
+                    "searches_used_this_month",
+                    int(getattr(user, "searches_used_this_month", 0)) + 1,
+                )
                 await db.commit()
                 logger.info(f"Incremented searches for user {user_id}")
                 return True

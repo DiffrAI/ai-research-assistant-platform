@@ -47,7 +47,7 @@ class LocalModelClient:
         """Calculate exponential backoff delay with jitter."""
         delay = min(self.retry_delay * (2**attempt), 10.0)
         jitter = time.time() % 0.1 * delay
-        return delay + jitter
+        return float(delay + jitter)
 
     def _is_retryable_error(self, error: Exception) -> bool:
         """Determine if an error is retryable."""

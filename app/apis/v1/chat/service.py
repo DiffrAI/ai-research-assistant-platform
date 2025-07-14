@@ -86,12 +86,22 @@ class ChatService:
 
         # Prepare initial input for agent execution
         state_input = {
-            "question": HumanMessage(content=str(request_params.question or "")),
+            "question": HumanMessage(
+                content=str(request_params.question)
+                if request_params.question is not None
+                else ""
+            ),
             "refined_question": "",
             "require_enhancement": False,
             "refined_questions": [],
             "search_results": [],
-            "messages": [HumanMessage(content=request_params.question)],
+            "messages": [
+                HumanMessage(
+                    content=str(request_params.question)
+                    if request_params.question is not None
+                    else ""
+                )
+            ],
         }
 
         # Run the workflow and get the final state
@@ -113,7 +123,11 @@ class ChatService:
 
                 elif mode == "messages":
                     _chunk, metadata = chunk[0], chunk[1]
-                    langgraph_node = metadata.get("langgraph_node")
+                    langgraph_node = (
+                        metadata.get("langgraph_node")
+                        if isinstance(metadata, dict)
+                        else None
+                    )
 
                     if (
                         hasattr(_chunk, "content")

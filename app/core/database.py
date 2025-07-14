@@ -3,9 +3,14 @@
 from typing import AsyncGenerator
 
 from loguru import logger
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import (
+    AsyncConnection,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import declarative_base
 
 from app import settings
 
@@ -21,9 +26,8 @@ engine = create_async_engine(
 )
 
 # Create session factory
-AsyncSessionLocal = sessionmaker(  # type: ignore
-    bind=engine,
-    class_=AsyncSession,
+AsyncSessionLocal = async_sessionmaker(
+    engine,
     expire_on_commit=False,
 )
 
@@ -59,17 +63,17 @@ async def init_db() -> None:
         logger.info("Database tables created successfully")
 
 
-async def migrate_add_stripe_customer_id(conn) -> None:
+async def migrate_add_stripe_customer_id(conn: AsyncConnection) -> None:
     """Add stripe_customer_id column if it doesn't exist."""
     try:
         # Check if stripe_customer_id column exists
-        result = await conn.execute("PRAGMA table_info(users)")
+        result = await conn.execute(text("PRAGMA table_info(users)"))
         columns = result.fetchall()
         column_names = [col[1] for col in columns]
 
         if "stripe_customer_id" not in column_names:
             await conn.execute(
-                "ALTER TABLE users ADD COLUMN stripe_customer_id VARCHAR"
+                text("ALTER TABLE users ADD COLUMN stripe_customer_id VARCHAR")
             )
             logger.info("Added stripe_customer_id column to users table")
     except Exception as e:

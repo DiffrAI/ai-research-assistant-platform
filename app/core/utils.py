@@ -124,7 +124,12 @@ def retry_with_backoff(
             else:
                 log.error(f"All {max_retries} attempts failed. Last error: {e}")
 
-    raise last_exception
+    if last_exception is not None:
+        raise last_exception
+    else:
+        raise RuntimeError(
+            "Unknown error in retry_with_backoff: no exception captured."
+        )
 
 
 def validate_email(email: str) -> bool:

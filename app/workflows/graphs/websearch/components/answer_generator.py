@@ -50,9 +50,16 @@ class AnswerGenerator:
         writer = get_stream_writer()
         writer({"citation_map": result_blocks})
 
+        # Prepare the question for the prompt
+        question_obj = state["question"]
+        if hasattr(question_obj, "content"):
+            question_content = question_obj.content
+        else:
+            question_content = str(question_obj)
+
         rag_prompt = RAG_PROMPT.format(
             context=combined_content,
-            question=state["question"].content,
+            question=question_content,
         )
         logger.debug(f"Aggregated content for answer generation:\n{rag_prompt}")
 
@@ -73,11 +80,17 @@ class AnswerGenerator:
         )
 
         if settings.USE_LOCAL_MODEL:
-            answer_content = self.llm.invoke(conversation)
+            answer_content_obj = self.llm.invoke(conversation)
+            if hasattr(answer_content_obj, "content"):
+                answer_content = str(answer_content_obj.content)
+            else:
+                answer_content = str(answer_content_obj)
         else:
             prompt = ChatPromptTemplate.from_messages(conversation)
             answer = self.llm.invoke(prompt.format_messages())
-            answer_content = str(answer.content)
+            answer_content = (
+                str(answer.content) if hasattr(answer, "content") else str(answer)
+            )
 
         logger.info(f"Final Answer Generated:\n{answer_content}")
 
