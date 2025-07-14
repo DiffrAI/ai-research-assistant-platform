@@ -33,6 +33,7 @@ def get_user_id_from_token(current_user: User = Depends(get_current_user)) -> st
 
 def write_temp_file(content: bytes | str | None) -> str:
     import tempfile
+
     tmp_file_path = ""
     with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
         if isinstance(content, str):
