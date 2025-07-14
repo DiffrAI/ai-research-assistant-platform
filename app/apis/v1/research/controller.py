@@ -1,5 +1,6 @@
 """Research controller for AI Research Assistant Platform."""
 
+import tempfile
 from typing import Any, List
 
 from fastapi import Depends, HTTPException
@@ -29,6 +30,20 @@ def get_research_service() -> ResearchService:
 def get_user_id_from_token(current_user: User = Depends(get_current_user)) -> str:
     """Get user ID from JWT token."""
     return str(current_user.id)
+
+
+def write_temp_file(content: bytes | str | None) -> str:
+    import tempfile
+    tmp_file_path = ""
+    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+        if isinstance(content, str):
+            tmp_file.write(content.encode("utf-8"))
+        elif isinstance(content, bytes):
+            tmp_file.write(content)
+        else:
+            tmp_file.write(b"")
+        tmp_file_path = tmp_file.name
+    return tmp_file_path
 
 
 @router.post(
@@ -152,11 +167,12 @@ async def export_research(
         export_request
     )
 
-    if status_code != 200:
+    if status_code != 200 or content is None:
         raise HTTPException(status_code=status_code, detail=filename)
 
+    tmp_file_path = write_temp_file(content)
     return FileResponse(
-        response_content=content,
+        tmp_file_path,
         filename=filename,
         media_type="application/octet-stream",
     )
