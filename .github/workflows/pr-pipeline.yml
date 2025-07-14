@@ -35,13 +35,13 @@ jobs:
         run: uv sync --extra dev
 
       - name: Run linting
-        run: uv run ruff check . --output-format=github
+        run: uv run python -m ruff check . --output-format=github
 
       - name: Run formatting check
-        run: uv run ruff format --check .
+        run: uv run python -m ruff format --check .
 
       - name: Run import sorting check
-        run: uv run ruff check . --select I --output-format=github
+        run: uv run python -m ruff check . --select I --output-format=github
 
   backend-type-check:
     name: Backend Type Check

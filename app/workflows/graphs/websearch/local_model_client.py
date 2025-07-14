@@ -197,13 +197,13 @@ class LocalModelClient:
                     # Try to convert to appropriate type
                     try:
                         field_type = schema.model_fields[field].annotation
-                        if field_type == bool:
+                        if field_type is bool:
                             data[field] = cast(
                                 Any, bool(value.lower() in ("true", "yes", "1"))
                             )
-                        elif field_type == int:
+                        elif field_type is int:
                             data[field] = cast(Any, int(value))
-                        elif field_type == float:
+                        elif field_type is float:
                             data[field] = cast(Any, float(value))
                         else:
                             data[field] = cast(Any, value)
