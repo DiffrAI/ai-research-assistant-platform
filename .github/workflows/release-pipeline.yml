@@ -385,6 +385,11 @@ jobs:
         with:
           name: frontend-build
 
+      - name: Unpack frontend build artifact
+        run: |
+          mkdir -p frontend
+          mv frontend-build frontend/build
+
       - name: Create release archive
         run: |
           mkdir -p release
