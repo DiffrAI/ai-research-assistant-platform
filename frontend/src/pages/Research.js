@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { Search, Loader2, Save, Download, ExternalLink, Copy } from 'lucide-react';
+import {
+  Search,
+  Loader2,
+  Save,
+  Download,
+  ExternalLink,
+  Copy,
+} from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { researchAPI } from '../services/api';
@@ -80,7 +87,9 @@ const Research = () => {
       });
 
       // Create download link
-      const blob = new Blob([response.data], { type: 'application/octet-stream' });
+      const blob = new Blob([response.data], {
+        type: 'application/octet-stream',
+      });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -106,8 +115,12 @@ const Research = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI Research Assistant</h1>
-          <p className="text-gray-600">Conduct intelligent research with AI-powered web search</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            AI Research Assistant
+          </h1>
+          <p className="text-gray-600">
+            Conduct intelligent research with AI-powered web search
+          </p>
         </div>
         {user && (
           <div className="text-sm text-gray-500">
@@ -120,7 +133,10 @@ const Research = () => {
       <div className="card">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label htmlFor="query" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="query"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Research Query
             </label>
             <div className="relative">
@@ -135,13 +151,18 @@ const Research = () => {
               />
             </div>
             {errors.query && (
-              <p className="mt-1 text-sm text-red-600">{errors.query.message}</p>
+              <p className="mt-1 text-sm text-red-600">
+                {errors.query.message}
+              </p>
             )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="max_results" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="max_results"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Max Results
               </label>
               <select
@@ -183,7 +204,9 @@ const Research = () => {
           {/* Summary */}
           {summary && (
             <div className="card">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Summary</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                AI Summary
+              </h3>
               <div className="prose max-w-none">
                 <p className="text-gray-700 leading-relaxed">{summary}</p>
               </div>
@@ -218,10 +241,15 @@ const Research = () => {
           {/* Citations */}
           {citations.length > 0 && (
             <div className="card">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Citations</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Citations
+              </h3>
               <div className="space-y-2">
                 {citations.map((citation, index) => (
-                  <div key={index} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
+                  <div
+                    key={index}
+                    className="flex items-start justify-between p-3 bg-gray-50 rounded-lg"
+                  >
                     <span className="text-sm text-gray-700">{citation}</span>
                     <button
                       onClick={() => copyToClipboard(citation)}
@@ -242,17 +270,25 @@ const Research = () => {
             </h3>
             <div className="space-y-4">
               {results.map((result, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                <div
+                  key={index}
+                  className="border border-gray-200 rounded-lg p-4"
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900 mb-2">{result.title}</h4>
+                      <h4 className="font-medium text-gray-900 mb-2">
+                        {result.title}
+                      </h4>
                       <p className="text-gray-600 text-sm mb-3 line-clamp-3">
                         {result.content}
                       </p>
                       <div className="flex items-center text-xs text-gray-500">
                         <span className="mr-4">Source: {result.source}</span>
                         {result.relevance_score && (
-                          <span>Relevance: {Math.round(result.relevance_score * 100)}%</span>
+                          <span>
+                            Relevance:{' '}
+                            {Math.round(result.relevance_score * 100)}%
+                          </span>
                         )}
                       </div>
                     </div>
@@ -277,4 +313,4 @@ const Research = () => {
   );
 };
 
-export default Research; 
+export default Research;

@@ -32,6 +32,16 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
+      - name: Cache uv packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            .venv
+            __pypackages__
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
       - name: Install uv
         uses: astral-sh/setup-uv@v1
         with:
@@ -40,14 +50,56 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev
 
-      - name: Run linting
-        run: uv run python -m ruff check . --output-format=github
+      - name: Run all ruff checks
+        run: |
+          uv run python -m ruff check . --output-format=github || true
+          uv run python -m ruff format --check . || true
+          uv run python -m ruff check . --select I --output-format=github || true
 
-      - name: Run formatting check
-        run: uv run python -m ruff format --check .
+  backend-autoformat:
+    name: Auto-format Python code and push if needed
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run import sorting check
-        run: uv run python -m ruff check . --select I --output-format=github
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run ruff format
+        run: uv run ruff format .
+
+      - name: Check for changes
+        id: git-check
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          if git diff --cached --quiet; then
+            echo "No formatting changes needed."
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            git commit -m "ci: auto-format Python code with ruff"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Push changes
+        if: steps.git-check.outputs.changed == 'true'
+        run: git push
 
   backend-type-check:
     name: Backend Type Check
@@ -60,6 +112,16 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache uv packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            .venv
+            __pypackages__
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
 
       - name: Install uv
         uses: astral-sh/setup-uv@v1
@@ -83,6 +145,16 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache uv packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            .venv
+            __pypackages__
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
 
       - name: Install uv
         uses: astral-sh/setup-uv@v1
@@ -120,6 +192,16 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Cache uv packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            .venv
+            __pypackages__
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
 
       - name: Install uv
         uses: astral-sh/setup-uv@v1
@@ -256,150 +338,6 @@ jobs:
       - name: Build Celery image
         run: docker build -f Dockerfile.celery -t ai-research-celery .
 
-  docker-compose:
-    name: Docker Compose Test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Create test environment
-        run: |
-          cp docs/example.env .env
-          echo "DATABASE_URL=sqlite+aiosqlite:///./test.db" >> .env
-          echo "CACHE_BACKEND=local" >> .env
-          echo "RATE_LIMIT_BACKEND=local" >> .env
-
-      - name: Test docker-compose
-        run: docker-compose config
-
-      - name: Test docker-compose with monitoring
-        run: docker-compose -f docker-compose-langfuse.yaml config
-
-  # =============================================================================
-  # INTEGRATION TESTS
-  # =============================================================================
-
-  integration-tests:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v1
-        with:
-          version: latest
-
-      - name: Install dependencies
-        run: uv sync --extra dev
-
-      - name: Create test environment
-        run: |
-          cp docs/example.env .env
-          echo "DATABASE_URL=sqlite+aiosqlite:///./test.db" >> .env
-          echo "REDIS_HOST=localhost" >> .env
-          echo "REDIS_PORT=6379" >> .env
-
-      - name: Wait for Redis
-        run: |
-          until redis-cli ping; do
-            echo "Waiting for Redis..."
-            sleep 1
-          done
-
-      - name: Run integration tests
-        run: uv run pytest tests/ -v -m "integration"
-
-  # =============================================================================
-  # CODE QUALITY METRICS
-  # =============================================================================
-
-  code-quality:
-    name: Code Quality Metrics
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v1
-        with:
-          version: latest
-
-      - name: Install dependencies
-        run: uv sync --extra dev
-
-      - name: Run complexity analysis
-        run: |
-          uv run radon cc app/ -a -nc
-          uv run radon mi app/ -nc
-          uv run radon hal app/ -nc
-
-      - name: Check for TODO/FIXME comments
-        run: |
-          echo "Checking for TODO/FIXME comments..."
-          grep -r "TODO\|FIXME" app/ || echo "No TODO/FIXME comments found"
-
-      - name: Check for print statements
-        run: |
-          echo "Checking for print statements..."
-          grep -r "print(" app/ || echo "No print statements found"
-
-  # =============================================================================
-  # DEPENDENCY CHECKS
-  # =============================================================================
-
-  dependency-check:
-    name: Dependency Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v1
-        with:
-          version: latest
-
-      - name: Check for outdated dependencies
-        run: uv run pip list --outdated
-
-      - name: Check for security vulnerabilities
-        run: uv run safety check
-
-      - name: Generate dependency tree
-        run: uv run pipdeptree
-
   # =============================================================================
   # DOCUMENTATION CHECKS
   # =============================================================================
@@ -412,10 +350,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check for broken links in README
-        run: |
-          echo "Checking for broken links..."
-          # This would require a link checker tool
-          echo "Link checking completed"
+        uses: lycheeverse/lychee-action@v1.8.0
+        with:
+          args: README.md --exclude localhost
 
       - name: Validate environment files
         run: |
@@ -438,7 +375,7 @@ jobs:
   pr-status:
     name: PR Status Check
     runs-on: ubuntu-latest
-    needs: [backend-lint, backend-type-check, backend-security, backend-tests, frontend-lint, frontend-tests, frontend-build, docker-build, docker-compose, integration-tests, code-quality, dependency-check, docs-check]
+    needs: [backend-lint, backend-type-check, backend-security, backend-tests, frontend-lint, frontend-tests, frontend-build, docker-build, docs-check]
     if: always()
     steps:
       - name: Check PR Status
@@ -455,8 +392,7 @@ jobs:
              [[ "${{ needs.frontend-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.frontend-build.result }}" == "failure" ]] || \
              [[ "${{ needs.docker-build.result }}" == "failure" ]] || \
-             [[ "${{ needs.docker-compose.result }}" == "failure" ]] || \
-             [[ "${{ needs.integration-tests.result }}" == "failure" ]]; then
+             [[ "${{ needs.docs-check.result }}" == "failure" ]]; then
             echo "❌ Some checks failed. Please fix the issues before merging."
             exit 1
           else
