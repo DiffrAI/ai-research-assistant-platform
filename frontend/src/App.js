@@ -66,11 +66,11 @@ function App() {
             },
           }}
         />
-        
+
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
-          
+
           {/* Protected routes */}
           <Route
             path="/"
@@ -82,7 +82,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/saved"
             element={
@@ -93,7 +93,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/analytics"
             element={
@@ -104,7 +104,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/trending"
             element={
@@ -115,7 +115,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/subscription"
             element={
@@ -126,7 +126,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/profile"
             element={
@@ -137,7 +137,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
+
           {/* Redirect to home for unknown routes */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -146,4 +146,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;
