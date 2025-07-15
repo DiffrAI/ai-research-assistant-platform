@@ -19,7 +19,7 @@ const Login = () => {
 
   const onSubmit = async (data) => {
     clearError();
-    
+
     if (isRegistering) {
       const result = await register(data);
       if (result.success) {
@@ -106,7 +106,9 @@ const Login = () => {
                   />
                 </div>
                 {errors.full_name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.full_name.message}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.full_name.message}
+                  </p>
                 )}
               </div>
             )}
@@ -132,7 +134,9 @@ const Login = () => {
                 />
               </div>
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.email.message}
+                </p>
               )}
             </div>
             <div>
@@ -168,7 +172,9 @@ const Login = () => {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.password.message}
+                </p>
               )}
             </div>
           </div>
@@ -181,8 +187,10 @@ const Login = () => {
             >
               {isLoading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              ) : isRegistering ? (
+                'Create Account'
               ) : (
-                isRegistering ? 'Create Account' : 'Sign in'
+                'Sign in'
               )}
             </button>
           </div>
@@ -190,11 +198,17 @@ const Login = () => {
           <div className="text-center">
             <p className="text-sm text-gray-600">
               By signing in, you agree to our{' '}
-              <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
+              <a
+                href="#"
+                className="font-medium text-primary-600 hover:text-primary-500"
+              >
                 Terms of Service
               </a>{' '}
               and{' '}
-              <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
+              <a
+                href="#"
+                className="font-medium text-primary-600 hover:text-primary-500"
+              >
                 Privacy Policy
               </a>
             </p>
@@ -205,4 +219,4 @@ const Login = () => {
   );
 };
 
-export default Login; 
+export default Login;

@@ -15,24 +15,29 @@ const Subscription = () => {
 
   useEffect(() => {
     fetchData();
-    
+
     // Handle URL parameters for success/cancel scenarios
     const success = searchParams.get('success');
     const canceled = searchParams.get('canceled');
     const plan = searchParams.get('plan');
     const price = searchParams.get('price');
     const searches = searchParams.get('searches');
-    
+
     if (!toastShownRef.current && (success === 'true' || canceled === 'true')) {
       toastShownRef.current = true;
-      
+
       if (success === 'true') {
         if (plan && price && searches) {
           const priceDisplay = price === '0' ? 'Free' : `$${price}`;
-          const searchesDisplay = searches === 'unlimited' ? 'Unlimited' : searches;
-          toast.success(`Successfully upgraded to ${plan} plan! Price: ${priceDisplay}, Searches: ${searchesDisplay}`);
+          const searchesDisplay =
+            searches === 'unlimited' ? 'Unlimited' : searches;
+          toast.success(
+            `Successfully upgraded to ${plan} plan! Price: ${priceDisplay}, Searches: ${searchesDisplay}`
+          );
         } else {
-          toast.success('Payment successful! Your subscription has been updated.');
+          toast.success(
+            'Payment successful! Your subscription has been updated.'
+          );
         }
       } else if (canceled === 'true') {
         toast.error('Payment was canceled.');
@@ -96,14 +101,18 @@ const Subscription = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Subscription Management</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Subscription Management
+        </h1>
         <p className="text-gray-600">Manage your subscription and usage</p>
       </div>
 
       {/* Current Plan & Usage */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Plan</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Current Plan
+          </h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-gray-600">Plan:</span>
@@ -125,7 +134,9 @@ const Subscription = () => {
         </div>
 
         <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Usage This Month</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Usage This Month
+          </h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-gray-600">Searches Used:</span>
@@ -138,7 +149,10 @@ const Subscription = () => {
             <div className="flex items-center justify-between">
               <span className="text-gray-600">Remaining:</span>
               <span className="font-medium text-green-600">
-                {Math.max(0, (usage?.searches_limit || 10) - (usage?.searches_used || 0))}
+                {Math.max(
+                  0,
+                  (usage?.searches_limit || 10) - (usage?.searches_used || 0)
+                )}
               </span>
             </div>
             {/* Progress bar */}
@@ -148,7 +162,9 @@ const Subscription = () => {
                 style={{
                   width: `${Math.min(
                     100,
-                    ((usage?.searches_used || 0) / (usage?.searches_limit || 10)) * 100
+                    ((usage?.searches_used || 0) /
+                      (usage?.searches_limit || 10)) *
+                      100
                   )}%`,
                 }}
               ></div>
@@ -159,7 +175,9 @@ const Subscription = () => {
 
       {/* Available Plans */}
       <div className="card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">Available Plans</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">
+          Available Plans
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {Object.entries(plans).map(([planName, plan]) => (
             <div
@@ -184,16 +202,24 @@ const Subscription = () => {
                 </h4>
                 <div className="text-3xl font-bold text-gray-900 mb-4">
                   ${plan.price}
-                  <span className="text-sm font-normal text-gray-500">/month</span>
+                  <span className="text-sm font-normal text-gray-500">
+                    /month
+                  </span>
                 </div>
 
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center text-sm text-gray-600">
                     <Check className="h-4 w-4 text-green-500 mr-2" />
-                    {plan.searches_limit === -1 ? 'Unlimited' : `${plan.searches_limit}`} searches/month
+                    {plan.searches_limit === -1
+                      ? 'Unlimited'
+                      : `${plan.searches_limit}`}{' '}
+                    searches/month
                   </div>
                   {plan.features.map((feature, index) => (
-                    <div key={index} className="flex items-center text-sm text-gray-600">
+                    <div
+                      key={index}
+                      className="flex items-center text-sm text-gray-600"
+                    >
                       <Check className="h-4 w-4 text-green-500 mr-2" />
                       {feature}
                     </div>
@@ -223,16 +249,28 @@ const Subscription = () => {
 
       {/* Plan Comparison */}
       <div className="card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">Plan Comparison</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">
+          Plan Comparison
+        </h3>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Feature</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-900">Free</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-900">Pro</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-900">Academic</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-900">Enterprise</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900">
+                  Feature
+                </th>
+                <th className="text-center py-3 px-4 font-medium text-gray-900">
+                  Free
+                </th>
+                <th className="text-center py-3 px-4 font-medium text-gray-900">
+                  Pro
+                </th>
+                <th className="text-center py-3 px-4 font-medium text-gray-900">
+                  Academic
+                </th>
+                <th className="text-center py-3 px-4 font-medium text-gray-900">
+                  Enterprise
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -279,4 +317,4 @@ const Subscription = () => {
   );
 };
 
-export default Subscription; 
+export default Subscription;
