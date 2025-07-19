@@ -7,7 +7,12 @@ from fastapi_utils.cbv import cbv
 
 from app.core.responses import AppJSONResponse, AppStreamingResponse
 
-from .models import ChatRequest, SummaryRequest, WebSearchChatRequest
+from .models import (
+    ChatRequest,
+    SummaryRequest,
+    SummaryTaskStatusResponse,
+    WebSearchChatRequest,
+)
 from .service import ChatService
 
 router = APIRouter()
@@ -66,11 +71,10 @@ class ChatRoute:
         )
         return AppJSONResponse(data=data, message=message, status_code=status_code)
 
-    @router.get("/celery/summary/status")
+    @router.get("/celery/summary/status", response_model=SummaryTaskStatusResponse)
     async def celery_summary_status(
         self,
         task_id: str | None = None,
-    ) -> AppJSONResponse:
+    ) -> SummaryTaskStatusResponse:
         """Get status and result of a Celery summary task."""
-        data, message, status_code = await self.service.summary_status(task_id=task_id)
-        return AppJSONResponse(data=data, message=message, status_code=status_code)
+        return await self.service.summary_status(task_id=task_id)

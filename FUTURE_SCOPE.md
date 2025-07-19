@@ -38,6 +38,7 @@ Refining the user interface for a more intuitive and engaging experience:
 *   **Dark Mode Implementation:** Prioritize the completion of a comprehensive dark mode theme for improved user comfort and aesthetic appeal.
 *   **Enhanced Mobile Responsiveness:** Further optimize the frontend for a seamless and fully functional experience across various mobile devices and screen sizes.
 *   **Real-time UI Updates:** Ensure that all UI components reflect changes and new data (e.g., AI processing progress, new search results) in real-time, minimizing perceived latency.
+*   **Frontend Build Optimizations:** Investigate advanced Webpack optimizations (e.g., bundle analysis, more aggressive code splitting, image optimization) if `create-react-app` becomes a performance bottleneck. Implement asset compression (gzip/brotli) and CDN integration at the deployment level for faster content delivery.
 
 ### 5. Monetization & Growth Strategy Support
 
@@ -52,7 +53,7 @@ Laying the groundwork for flexible and scalable business models:
 Ensuring the platform remains robust, secure, and performant as it scales:
 
 *   **Distributed Caching Solutions:** Investigate and implement more advanced distributed caching solutions (e.g., Redis Cluster, Memcached) to handle increased load and improve response times.
-*   **Database Scaling Strategies:** Plan for and implement database scaling strategies, such as read replicas and sharding, to support anticipated growth in user data and traffic.
+*   **Database Scaling Strategies:** Plan for and implement database scaling strategies, such as read replicas and sharding, to support anticipated growth in user data and traffic. Formalize database schema management using Alembic for robust migrations and version control.
 *   **Automated Security Audits & Penetration Testing:** Integrate more advanced security scanning tools into the CI/CD pipeline and consider regular third-party security audits and penetration tests.
 *   **Comprehensive Disaster Recovery & Backup:** Establish and regularly test robust data backup and disaster recovery procedures to ensure data integrity and business continuity.
 *   **Advanced Performance Monitoring & Alerting:** Enhance existing Prometheus/Grafana setups with more granular metrics, custom dashboards, and automated alerting for proactive identification and resolution of performance bottlenecks.

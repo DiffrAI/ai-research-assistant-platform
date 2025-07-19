@@ -1,7 +1,7 @@
 """Enhanced configuration settings for the application."""
 
 import enum
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -178,6 +178,9 @@ class AppConfig(BaseSettings):
 
     # Search configuration
     search: SearchConfig = SearchConfig()
+    search_timeout: int = Field(
+        default=30, ge=5, le=120, description="Global search request timeout"
+    )
 
     # Security configuration
     security: SecurityConfig = SecurityConfig()
@@ -286,6 +289,10 @@ class AppConfig(BaseSettings):
         return self.search.max_delay
 
     @property
+    def SEARCH_TIMEOUT(self) -> int:
+        return self.search_timeout
+
+    @property
     def SECRET_KEY(self) -> str:
         return self.security.secret_key
 
@@ -341,13 +348,30 @@ class AppConfig(BaseSettings):
 
     @field_validator("security")
     @classmethod
-    def validate_secret_key(cls, v: "SecurityConfig") -> "SecurityConfig":
+    def validate_secret_key(cls, v: "SecurityConfig", info: Any) -> "SecurityConfig":
         """Ensure secret key is changed in production."""
-        if v.secret_key == "your-secret-key-change-in-production":
-            import os
+        if (
+            info.data.get("environment") == AppEnvs.PRODUCTION
+            and v.secret_key == "your-secret-key-change-in-production"
+        ):
+            raise ValueError("SECRET_KEY must be changed in production!")
+        return v
 
-            if os.getenv("ENVIRONMENT") == "production":
-                raise ValueError("SECRET_KEY must be changed in production")
+    @field_validator(
+        "openai_api_key",
+        "tavily_api_key",
+        "stripe_secret_key",
+        "stripe_publishable_key",
+        "stripe_webhook_secret",
+        "langfuse_host",
+        "langfuse_public_key",
+        "langfuse_secret_key",
+    )
+    @classmethod
+    def validate_production_keys(cls, v: str, info: Any) -> str:
+        """Ensure critical API keys are set in production."""
+        if info.data.get("environment") == AppEnvs.PRODUCTION and not v:
+            raise ValueError(f"{info.field_name.upper()} must be set in production!")
         return v
 
 

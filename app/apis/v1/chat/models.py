@@ -40,3 +40,22 @@ class SummaryRequest(BaseModel):
         ...,
         json_schema_extra={"description": "The text content to summarize."},
     )
+
+
+class SummaryTaskResponse(BaseModel):
+    """Response model for summary task submission."""
+
+    task_id: str = Field(..., description="The ID of the submitted Celery task.")
+    status: str = Field(..., description="The status of the task.")
+    message: str = Field(..., description="A descriptive message.")
+
+
+class SummaryTaskStatusResponse(BaseModel):
+    """Response model for summary task status and result."""
+
+    task_id: str = Field(..., description="The ID of the Celery task.")
+    status: str = Field(..., description="The current status of the task.")
+    result: Optional[str] = Field(
+        None, description="The result of the task, if completed."
+    )
+    message: str = Field(..., description="A descriptive message.")
