@@ -1,7 +1,6 @@
 """Payment service for Stripe integration."""
 
-from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from loguru import logger
 
@@ -12,6 +11,7 @@ from app.models import SubscriptionPlan, get_subscription_limits
 if settings.stripe_secret_key:
     try:
         import stripe
+
         stripe.api_key = settings.stripe_secret_key
         USE_STRIPE = True
     except ImportError:
@@ -57,19 +57,21 @@ class PaymentService:
 
         try:
             plan_limits = get_subscription_limits(plan)
-            
+
             session = stripe.checkout.Session.create(
                 customer=customer_id,
                 payment_method_types=["card"],
-                line_items=[{
-                    "price_data": {
-                        "currency": "usd",
-                        "product_data": {"name": f"{plan.value.title()} Plan"},
-                        "unit_amount": plan_limits["price"] * 100,
-                        "recurring": {"interval": "month"},
-                    },
-                    "quantity": 1,
-                }],
+                line_items=[
+                    {
+                        "price_data": {
+                            "currency": "usd",
+                            "product_data": {"name": f"{plan.value.title()} Plan"},
+                            "unit_amount": plan_limits["price"] * 100,
+                            "recurring": {"interval": "month"},
+                        },
+                        "quantity": 1,
+                    }
+                ],
                 mode="subscription",
                 success_url=success_url,
                 cancel_url=cancel_url,

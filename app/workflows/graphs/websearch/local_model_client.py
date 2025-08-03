@@ -113,11 +113,7 @@ class LocalModelClient:
             error_msg += f": {last_error}"
 
         logger.error(error_msg)
-        raise ServiceUnavailableError(
-            message="Local model is currently unavailable",
-            service="ollama",
-            details={"model": self.model_name, "attempts": self.max_retries},
-        )
+        raise ServiceUnavailableError("Local model is currently unavailable")
 
     def invoke_with_structured_output(
         self, messages: List[BaseMessage], schema: Type[T]

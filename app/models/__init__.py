@@ -16,7 +16,7 @@ from app.models.models import (
 
 __all__ = [
     "SubscriptionInfo",
-    "SubscriptionPlan", 
+    "SubscriptionPlan",
     "Token",
     "TokenData",
     "User",

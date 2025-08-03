@@ -1,8 +1,8 @@
 """Essential API tests for core functionality."""
 
 import pytest
-from httpx import AsyncClient, ASGITransport
 from asgi_lifespan import LifespanManager
+from httpx import ASGITransport, AsyncClient
 
 from app.core.server import app
 
@@ -36,15 +36,19 @@ async def test_payment_plans():
 @pytest.mark.asyncio
 async def test_auth_registration():
     """Test user registration."""
+    import uuid
+
+    unique_email = f"newuser-{uuid.uuid4()}@example.com"
+
     async with LifespanManager(app):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/api/v1/auth/register",
                 json={
-                    "email": "newuser@example.com",
+                    "email": unique_email,
                     "full_name": "New User",
-                    "password": "testpass123"
+                    "password": "testpass123",
                 },
             )
             assert response.status_code in (200, 201)

@@ -8,7 +8,12 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from app.api import api_router
 from app.core.config import settings
 from app.core.lifespan import lifespan
-from app.exceptions import app_exception_handler, general_exception_handler, validation_exception_handler, AppException
+from app.exceptions import (
+    AppException,
+    app_exception_handler,
+    general_exception_handler,
+    validation_exception_handler,
+)
 
 
 def configure_middleware(app: FastAPI) -> None:
