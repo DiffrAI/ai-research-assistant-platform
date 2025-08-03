@@ -29,14 +29,14 @@ async def setup_test_environment():
     # Import all models to ensure they are registered with SQLAlchemy
     from app.models import UserDB  # noqa: F401
     from app.models.models import UserDB as UserDBModel  # noqa: F401
-    
+
     # Setup test database
     engine = create_async_engine(
-        TEST_DATABASE_URL, 
+        TEST_DATABASE_URL,
         connect_args={"check_same_thread": False},
-        echo=False  # Disable SQL logging in tests
+        echo=False,  # Disable SQL logging in tests
     )
-    
+
     # Create all tables
     async with engine.begin() as conn:
         # Drop all tables first to ensure clean state

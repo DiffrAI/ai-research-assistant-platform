@@ -55,5 +55,5 @@ async def test_auth_registration():
             if response.status_code not in (200, 201):
                 print(f"Registration failed with status {response.status_code}")
                 print(f"Response: {response.text}")
-            
+
             assert response.status_code in (200, 201)
