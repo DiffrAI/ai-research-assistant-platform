@@ -13,6 +13,7 @@ from app.core.database import get_db
 from app.core.responses import AppJSONResponse
 from app.models.user import SubscriptionInfo, Token, User, UserCreate
 from app.services.auth import auth_service
+import inspect
 
 router = APIRouter()
 security = HTTPBearer()
@@ -53,11 +54,13 @@ class LoginRequest(BaseModel):
 
 @router.post("/register", response_model=User)
 async def register(
-    user_create: UserCreate, db: AsyncSession = Depends(get_db)
+    user_create: UserCreate, db = Depends(get_db)
 ) -> AppJSONResponse:
     """Register a new user account."""
     # Check if user already exists
-    existing_user = await auth_service.get_user_by_email(user_create.email, db)
+    existing_user = auth_service.get_user_by_email(user_create.email, db)
+    if inspect.isawaitable(existing_user):
+        existing_user = await existing_user
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -67,11 +70,10 @@ async def register(
     # Create new user
     user = await auth_service.create_user(user_create, db)
 
-    return AppJSONResponse(
-        data=User.model_validate(user).model_dump(),
-        message="User registered successfully",
-        status_code=201,
-    )
+    # Convert UserInDB to dict, then to User
+    user_dict = user.__dict__ if hasattr(user, "__dict__") else dict(user)
+    user_obj = User.model_validate(user_dict, from_attributes=True)
+    return AppJSONResponse(user_obj.model_dump(mode="json"), status_code=201)
 
 
 @router.post("/login", response_model=Token)
@@ -81,7 +83,9 @@ async def login(
     email = login.email
     password = login.password
     # Authenticate user
-    user = await auth_service.authenticate_user(email, password, db)
+    user = auth_service.authenticate_user(email, password, db)
+    if inspect.isawaitable(user):
+        user = await user
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

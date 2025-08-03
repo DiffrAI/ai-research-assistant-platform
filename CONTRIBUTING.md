@@ -1,8 +1,8 @@
-# 🤝 Contributing to AI Research Assistant Platform
+# Contributing to AI Research Assistant Platform
 
 Thank you for your interest in contributing to the AI Research Assistant Platform! This document provides guidelines and information for contributors.
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Getting Started](#getting-started)
 - [Development Setup](#development-setup)
@@ -12,7 +12,7 @@ Thank you for your interest in contributing to the AI Research Assistant Platfor
 - [Issue Reporting](#issue-reporting)
 - [Feature Requests](#feature-requests)
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -50,7 +50,7 @@ Thank you for your interest in contributing to the AI Research Assistant Platfor
    cd frontend && npm start
    ```
 
-## 🛠️ Development Setup
+## Development Setup
 
 ### Backend Development
 
@@ -93,7 +93,7 @@ Required for development:
 - `LOCAL_MODEL_NAME` (must match your Ollama model)
 - `SEARCH_PROVIDER=duckduckgo`
 
-## 📝 Code Style
+## Code Style
 
 ### Python (Backend)
 
@@ -131,7 +131,7 @@ npm run lint
 npm run test
 ```
 
-## 🧪 Testing
+## Testing
 
 ### Backend Tests
 
@@ -168,7 +168,7 @@ Test the full stack:
 ./test-apis.sh
 ```
 
-## 🔄 Pull Request Process
+## Pull Request Process
 
 ### Before Submitting
 
@@ -231,7 +231,7 @@ Brief description of what this PR does.
 - [ ] Commit messages are conventional
 ```
 
-## 🐛 Issue Reporting
+## Issue Reporting
 
 ### Bug Reports
 
@@ -283,7 +283,7 @@ What actually happens.
 Any other context, logs, or screenshots.
 ```
 
-## 💡 Feature Requests
+## Feature Requests
 
 ### Before Requesting Features
 
@@ -310,7 +310,7 @@ What other approaches have you considered?
 Any other relevant information.
 ```
 
-## 🏗️ Architecture Guidelines
+## Architecture Guidelines
 
 ### Backend
 
@@ -335,7 +335,7 @@ Any other relevant information.
 - **Validate data**: At the model level
 - **Handle relationships**: Properly with SQLAlchemy
 
-## 🔧 Development Workflow
+## Development Workflow
 
 ### Daily Development
 
@@ -381,7 +381,7 @@ Any other relevant information.
    - Add tests if needed
    - Update documentation
 
-## 📚 Resources
+## Resources
 
 ### Documentation
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
@@ -398,7 +398,7 @@ Any other relevant information.
 - [GitHub Issues](https://github.com/mahiuddinalkamal/ai-research-assistant-platform/issues)
 - [GitHub Discussions](https://github.com/mahiuddinalkamal/ai-research-assistant-platform/discussions)
 
-## 🎯 Areas for Contribution
+## Areas for Contribution
 
 ### High Priority
 - [ ] Add more test coverage
@@ -421,7 +421,7 @@ Any other relevant information.
 - [ ] Create mobile app
 - [ ] Add SSO integration
 
-## 🙏 Thank You
+## Thank You
 
 Thank you for contributing to the AI Research Assistant Platform! Your contributions help make this project better for everyone.
 

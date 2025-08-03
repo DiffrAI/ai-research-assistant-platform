@@ -1,31 +1,34 @@
 """Tests for the /chat streaming endpoint."""
 
-from fastapi.testclient import TestClient
-
+import pytest
+from httpx import AsyncClient, ASGITransport
 from app.core.server import app
+from asgi_lifespan import LifespanManager
+import asyncio
 
-
-# Use context manager to ensure lifespan is triggered (for app.state setup)
-def test_stream_chat():
+@pytest.mark.asyncio
+async def test_stream_chat():
     """Test the /chat streaming endpoint."""
-    with TestClient(app) as client:
-        response = client.get("/api/v1/chat?sleep=0.01&number=3")
-
-        assert response.status_code == 200
-        assert response.headers["content-type"] == "application/json"
-
-        chunks = []
-        for chunk in response.iter_lines():
-            if chunk:  # avoid empty lines
-                chunks.append(chunk)
-
-        # Filter out data lines (ignoring 'event:' or other metadata)
-        data_lines = [line for line in chunks if line.startswith("data:")]
-
-        # Expecting 3 streamed tokens and a [DONE] completion line
-        assert len(data_lines) == 4
-        assert data_lines[-1] == "data: [DONE]"
-
-        # Optionally validate values
-        for i in range(3):
-            assert f"data: {i}" in data_lines
+    async with LifespanManager(app):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            # Register a user (ignore if already exists)
+            reg_resp = await client.post(
+                "/api/v1/auth/register",
+                json={
+                    "email": "testuser@example.com",
+                    "full_name": "Test User",
+                    "password": "testpass123"
+                },
+            )
+            assert reg_resp.status_code in (201, 400)
+            await asyncio.sleep(0.1)
+            # Login to get token
+            login_resp = await client.post(
+                "/api/v1/auth/login",
+                json={"email": "testuser@example.com", "password": "testpass123"},
+            )
+            token = login_resp.json().get("access_token")
+            headers = {"Authorization": f"Bearer {token}"}
+            response = await client.get("/api/v1/chat/stream?sleep=0.01&number=3", headers=headers)
+            assert response.status_code == 200

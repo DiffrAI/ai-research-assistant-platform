@@ -8,6 +8,7 @@ from loguru import logger
 from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+import inspect
 
 from app import settings
 from app.models.user import TokenData, UserCreate, UserInDB
@@ -70,22 +71,22 @@ class AuthService:
         except JWTError:
             return None
 
-    async def authenticate_user(
-        self, email: str, password: str, db: AsyncSession
-    ) -> UserInDB | None:
-        """Authenticate a user with email and password."""
+    async def authenticate_user(self, email: str, password: str, db) -> UserInDB | None:
         # Get user from database
-        user = await self.get_user_by_email(email, db)
+        user = self.get_user_by_email(email, db)
+        if inspect.isawaitable(user):
+            user = await user
         if user and self.verify_password(password, user.hashed_password):
             return user
         return None
 
-    async def create_user(self, user_create: UserCreate, db: AsyncSession) -> UserInDB:
-        """Create a new user account."""
+    async def create_user(self, user_create: UserCreate, db) -> UserInDB:
         from app.models.user import SubscriptionPlan, UserRole
 
         # Check if user already exists
-        existing_user = await self.get_user_by_email(user_create.email, db)
+        existing_user = self.get_user_by_email(user_create.email, db)
+        if inspect.isawaitable(existing_user):
+            existing_user = await existing_user
         if existing_user:
             raise ValueError("Email already registered")
 
@@ -102,29 +103,55 @@ class AuthService:
         )
 
         db.add(db_user)
-        await db.commit()
-        await db.refresh(db_user)
+        if inspect.iscoroutinefunction(db.commit):
+            await db.commit()
+            await db.refresh(db_user)
+        else:
+            db.commit()
+            db.refresh(db_user)
 
         # Convert to UserInDB
         return UserInDB.model_validate(db_user, from_attributes=True)
 
-    async def get_user_by_id(self, user_id: int, db: AsyncSession) -> UserInDB | None:
-        """Get a user by ID."""
+    def get_user_by_id(self, user_id: int, db) -> "UserInDB | None":
+        if inspect.iscoroutinefunction(db.execute):
+            return self._get_user_by_id_async(user_id, db)
+        else:
+            result = db.execute(select(UserDB).where(UserDB.id == user_id))
+            user = result.scalars().first()
+            return user
+
+    async def _get_user_by_id_async(self, user_id: int, db) -> "UserInDB | None":
         result = await db.execute(select(UserDB).where(UserDB.id == user_id))
-        db_user = result.scalar_one_or_none()
+        user = result.scalars().first()
+        return user
 
-        if db_user:
-            return UserInDB.model_validate(db_user, from_attributes=True)
-        return None
-
-    async def get_user_by_email(self, email: str, db: AsyncSession) -> UserInDB | None:
+    def get_user_by_email(self, email: str, db) -> "UserInDB | None":
         """Get a user by email."""
-        result = await db.execute(select(UserDB).where(UserDB.email == email))
-        db_user = result.scalar_one_or_none()
+        if inspect.iscoroutinefunction(db.execute):
+            return self._get_user_by_email_async(email, db)
+        else:
+            result = db.execute(select(UserDB).where(UserDB.email == email))
+            user = result.scalars().first()
+            return user
 
-        if db_user:
-            return UserInDB.model_validate(db_user, from_attributes=True)
-        return None
+    async def _get_user_by_email_async(self, email: str, db) -> "UserInDB | None":
+        result = await db.execute(select(UserDB).where(UserDB.email == email))
+        user = result.scalars().first()
+        return user
+
+    def get_user_by_email_or_id(self, email: str, user_id: int, db) -> "UserInDB | None":
+        if inspect.iscoroutinefunction(db.execute):
+            return self._get_user_by_email_or_id_async(email, user_id, db)
+        else:
+            result = db.execute(select(UserDB).where((UserDB.email == email) | (UserDB.id == user_id)))
+            user = result.scalars().first()
+            return user
+
+    async def _get_user_by_email_or_id_async(self, email: str, user_id: int, db) -> "UserInDB | None":
+        result = await db.execute(select(UserDB).where((UserDB.email == email) | (UserDB.id == user_id)))
+        user = result.scalars().first()
+        return user
 
     async def increment_user_searches(self, user_id: int, db: AsyncSession) -> bool:
         """Increment user's search count for the current month."""

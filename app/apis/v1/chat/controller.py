@@ -6,24 +6,28 @@ from fastapi_limiter.depends import RateLimiter
 from fastapi_utils.cbv import cbv
 
 from app.apis.v1.auth.controller import get_current_user
-from app.core.responses import AppJSONResponse, AppStreamingResponse
-from app.models.user import UserInDB
 from app.apis.v1.chat.models import (
     ChatRequest,
-    WebSearchChatRequest,
     SummaryRequest,
     SummaryTaskResponse,
     SummaryTaskStatusResponse,
+    WebSearchChatRequest,
 )
 from app.apis.v1.chat.service import ChatService
+from app.core.responses import AppJSONResponse, AppStreamingResponse
+from app.models.user import UserInDB
 
 router = APIRouter()
+
 
 def common_dependency() -> dict[str, str]:
     """Common dependency."""
     return {"msg": "This is a dependency"}
 
-async def rate_limit_key_func(request: Request, current_user: UserInDB = Depends(get_current_user)) -> str:
+
+async def rate_limit_key_func(
+    request: Request, current_user: UserInDB = Depends(get_current_user)
+) -> str:
     """
     Custom key function for rate limiting based on user ID.
     If user is authenticated, use user_id. Otherwise, fallback to IP address.
@@ -33,6 +37,7 @@ async def rate_limit_key_func(request: Request, current_user: UserInDB = Depends
     if request.client and request.client.host:
         return request.client.host
     return "unknown_host"
+
 
 @cbv(router)
 class ChatRoute:

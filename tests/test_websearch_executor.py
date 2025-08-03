@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import MagicMock, patch
 
 from app.workflows.graphs.websearch.components.websearch_executor import (
@@ -5,31 +6,35 @@ from app.workflows.graphs.websearch.components.websearch_executor import (
 )
 
 
-def test_websearch_executor_fallback_to_refined_question():
+# REPLACE ALL TESTS WITH ASYNC VERSIONS
+@pytest.mark.asyncio
+async def test_websearch_executor_fallback_to_refined_question():
     executor = WebSearchExecutor()
     state = {
         "question": MagicMock(content="original question"),
         "refined_question": "refined question",
         # 'refined_questions' missing
     }
-    with patch(
-        "app.workflows.graphs.websearch.components.websearch_executor.SEARCH_TOOL"
-    ) as mock_tool:
-        mock_tool.invoke.return_value = [
+    async def mock_ainvoke(params):
+        return {"results": [
             {
                 "title": "Result",
                 "link": "url",
                 "content": "Some content",
                 "source": "DuckDuckGo",
             }
-        ]
-        result = executor.search(state)
+        ]}
+    with patch(
+        "app.workflows.graphs.websearch.components.websearch_executor.SEARCH_TOOL"
+    ) as mock_tool:
+        mock_tool.ainvoke.side_effect = mock_ainvoke
+        result = await executor.search(state)
         assert "search_results" in result
         assert isinstance(result["search_results"], list)
         assert result["search_results"][0]["title"] == "Result"
 
-
-def test_websearch_executor_retry_logic():
+@pytest.mark.asyncio
+async def test_websearch_executor_retry_logic():
     executor = WebSearchExecutor()
     state = {
         "question": MagicMock(content="original question"),
@@ -38,7 +43,7 @@ def test_websearch_executor_retry_logic():
     # Fail twice, then succeed
     call_count = {"count": 0}
 
-    def flaky_invoke(_):
+    async def flaky_ainvoke(_):
         if call_count["count"] < 2:
             call_count["count"] += 1
             raise Exception("Temporary error")
@@ -54,21 +59,23 @@ def test_websearch_executor_retry_logic():
     with patch(
         "app.workflows.graphs.websearch.components.websearch_executor.SEARCH_TOOL"
     ) as mock_tool:
-        mock_tool.invoke.side_effect = flaky_invoke
-        result = executor.search(state)
+        mock_tool.ainvoke.side_effect = flaky_ainvoke
+        result = await executor.search(state)
         assert any(r["title"] == "Recovered" for r in result["search_results"])
         assert call_count["count"] == 2
 
-
-def test_websearch_executor_failed_queries():
+@pytest.mark.asyncio
+async def test_websearch_executor_failed_queries():
     executor = WebSearchExecutor()
     state = {
         "question": MagicMock(content="original question"),
         "refined_question": "refined question",
     }
+    async def always_fail(_):
+        raise Exception("Always fails")
     with patch(
         "app.workflows.graphs.websearch.components.websearch_executor.SEARCH_TOOL"
     ) as mock_tool:
-        mock_tool.invoke.side_effect = Exception("Always fails")
-        result = executor.search(state)
+        mock_tool.ainvoke.side_effect = always_fail
+        result = await executor.search(state)
         assert result["search_results"] == []

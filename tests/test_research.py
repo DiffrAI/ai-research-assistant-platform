@@ -1,13 +1,17 @@
 """Test research endpoint functionality."""
 
+import pytest
 from fastapi.testclient import TestClient
-
 from app.core.server import app
+from app.apis.v1.auth.controller import get_current_user
 
 
 # Use context manager to ensure lifespan is triggered (for app.state setup)
 def test_research_unauthenticated():
     """Test that unauthenticated research requests are rejected."""
+    # Remove the mock_auth override for this test
+    if get_current_user in app.dependency_overrides:
+        del app.dependency_overrides[get_current_user]
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/research", json={"query": "What is the latest news about AI?"}

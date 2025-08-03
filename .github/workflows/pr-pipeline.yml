@@ -52,9 +52,9 @@ jobs:
 
       - name: Run all ruff checks
         run: |
-          uv run python -m ruff check . --output-format=github || true
-          uv run python -m ruff format --check . || true
-          uv run python -m ruff check . --select I --output-format=github || true
+          uv run python -m ruff check . --output-format=github
+          uv run python -m ruff format --check .
+          uv run python -m ruff check . --select I --output-format=github
 
   backend-autoformat:
     name: Auto-format Python code and push if needed
@@ -165,10 +165,10 @@ jobs:
         run: uv sync --extra dev
 
       - name: Run bandit security scan
-        run: uv run bandit -r app/ -f json -o bandit-report.json || true
+        run: uv run bandit -r app/ -f json -o bandit-report.json
 
       - name: Run safety check
-        run: uv run safety check --json --output safety-report.json || true
+        run: uv run safety check --json --output safety-report.json
 
       - name: Upload security reports
         uses: actions/upload-artifact@v4
