@@ -11,7 +11,7 @@ from loguru import logger
 from pydantic import BaseModel, SecretStr, ValidationError
 
 from app import settings
-from app.core.exceptions import ServiceUnavailableError
+from app.exceptions import ServiceUnavailableError
 
 T = TypeVar("T", bound=BaseModel)
 

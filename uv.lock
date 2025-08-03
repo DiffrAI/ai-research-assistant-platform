@@ -39,13 +39,11 @@ dependencies = [
     { name = "prometheus-fastapi-instrumentator" },
     { name = "psycopg2-binary" },
     { name = "pydantic-settings" },
-    { name = "pytest" },
     { name = "python-jose", extra = ["cryptography"] },
     { name = "python-multipart" },
     { name = "setuptools" },
     { name = "sqlalchemy" },
     { name = "stripe" },
-    { name = "typing-inspect" },
     { name = "uvicorn" },
 ]
 
@@ -58,6 +56,7 @@ dev = [
     { name = "mypy" },
     { name = "pipdeptree" },
     { name = "pre-commit" },
+    { name = "pytest" },
     { name = "pytest-cov" },
     { name = "radon" },
     { name = "ruff" },
@@ -99,7 +98,7 @@ requires-dist = [
     { name = "prometheus-fastapi-instrumentator", specifier = ">=7.1.0,<8.0.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.0,<3.0.0" },
     { name = "pydantic-settings", specifier = ">=2.9.1,<3.0.0" },
-    { name = "pytest", specifier = ">=8.4.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0.0,<6.0.0" },
     { name = "python-jose", extras = ["cryptography"], specifier = ">=3.3.0,<4.0.0" },
     { name = "python-multipart", specifier = ">=0.0.6,<1.0.0" },
@@ -109,7 +108,6 @@ requires-dist = [
     { name = "setuptools", specifier = "<81" },
     { name = "sqlalchemy", specifier = ">=2.0.0,<3.0.0" },
     { name = "stripe", specifier = ">=7.0.0,<8.0.0" },
-    { name = "typing-inspect", specifier = ">=0.9.0,<0.10.0" },
     { name = "uvicorn", specifier = ">=0.34.3,<0.35.0" },
 ]
 provides-extras = ["dev"]

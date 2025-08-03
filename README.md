@@ -1,5 +1,4 @@
-[![Release Pipeline](https://github.com/mahiuddinalkamal/ai-research-assistant-platform/actions/workflows/release-pipeline.yml/badge.svg)](https://github.com/mahiuddinalkamal/ai-research-assistant-platform/actions/workflows/release-pipeline.yml)
-[![Pull Request Pipeline](https://github.com/mahiuddinalkamal/ai-research-assistant-platform/actions/workflows/pr-pipeline.yml/badge.svg)](https://github.com/mahiuddinalkamal/ai-research-assistant-platform/actions/workflows/pr-pipeline.yml)
+[![Release Pipeline](https://github.com/DiffrAI/ai-research-assistant-platform/actions/workflows/release-pipeline.yml/badge.svg)](https://github.com/DiffrAI/ai-research-assistant-platform/actions/workflows/release-pipeline.yml)
 
 # AI Research Assistant Platform
 
@@ -26,13 +25,14 @@ A modern, full-stack platform for AI-powered research. Built with FastAPI and Re
 - Node.js 16+
 - Git
 - Docker (Optional)
+- Docker Compose (Optional)
 
 ### 1. Clone & Install
 ```bash
 git clone https://github.com/DiffrAI/ai-research-assistant-platform
 cd ai-research-assistant-platform
 uv sync
-cp docs/example.env .env
+cp .env.sample .env
 # Edit .env as needed
 ```
 
@@ -45,7 +45,7 @@ npm install
 ### 3. Run (Dev)
 ```bash
 # Backend
-uv run python -m app.core.server
+uv run python main.py
 # Frontend (in another terminal)
 cd frontend
 npm start
@@ -60,7 +60,34 @@ npm start
 
 ## Architecture
 
-- **Backend:** FastAPI (Python), async, modular, API versioned
+### Backend Structure
+```
+app/
+├── api/                    # API endpoints
+│   ├── auth.py            # Authentication endpoints
+│   ├── chat.py            # Chat & streaming endpoints
+│   ├── research.py        # Research endpoints
+│   ├── payment.py         # Payment & subscription endpoints
+│   └── health.py          # Health check endpoints
+├── core/                  # Core infrastructure
+│   ├── config.py          # Configuration management
+│   ├── database.py        # Database setup & connections
+│   ├── server.py          # FastAPI application setup
+│   └── lifespan.py        # Application lifecycle management
+├── models/                # Data models
+│   └── models.py          # Unified Pydantic & SQLAlchemy models
+├── workflows/             # AI workflow components
+│   └── graphs/websearch/  # Web search AI workflows
+├── tasks/                 # Background task processing
+├── auth.py               # Authentication logic & utilities
+├── payment.py            # Payment service integration
+├── responses.py          # Response formatting utilities
+├── exceptions.py         # Custom exception handling
+└── utils.py              # Essential utility functions
+```
+
+### Technology Stack
+- **Backend:** FastAPI (Python), async, modular, simplified architecture
 - **Frontend:** React (TypeScript), Tailwind CSS, Zustand state
 - **Database:** SQLite (dev), PostgreSQL (prod-ready)
 - **AI:** Local LLMs (Ollama), OpenAI fallback
@@ -95,11 +122,11 @@ npm start
 
 - **Docker Compose (all services):**
   ```bash
-  docker-compose up --build
+  docker compose up --build
   ```
 - **Production (with monitoring):**
   ```bash
-  docker-compose -f docker-compose-langfuse.yaml up --build
+  docker compose -f docker-compose-langfuse.yaml up --build
   ```
 
 ---

@@ -50,7 +50,7 @@ async def init_db() -> None:
     """Initialize database tables."""
     # Database migrations are handled by Alembic, so no need to create tables here.
     # Import all models here to ensure they are registered with SQLAlchemy for Alembic to discover.
-    from app.models.user_db import User  # noqa: F401
+    from app.models import UserDB  # noqa: F401
 
 
 async def close_db() -> None:

@@ -1,72 +1,51 @@
-import pytest
+"""Test configuration."""
+
 import asyncio
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from app.core.database import Base, get_db
-from app.core.server import app
-import os
+import pytest
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from fastapi_limiter import FastAPILimiter
 import fakeredis.aioredis
-from app.apis.v1.auth.controller import get_current_user
-from app.models.user import User, SubscriptionPlan, UserRole
-from datetime import datetime
 
-# Use an in-memory SQLite database with shared cache for tests
+from app.core.database import Base, get_db
+from app.core.server import app
+
+# Use in-memory SQLite for tests
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:?cache=shared"
+
 
 @pytest.fixture(scope="session")
 def event_loop():
+    """Create event loop for async tests."""
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
 
-@pytest.fixture(scope="session", autouse=True)
-async def fastapi_limiter_init():
-    fake_redis = fakeredis.aioredis.FakeRedis()
-    await FastAPILimiter.init(redis=fake_redis)
-    yield
-    await FastAPILimiter.close()
 
-@pytest.fixture(scope="session")
-async def test_engine():
+@pytest.fixture(scope="session", autouse=True)
+async def setup_test_environment():
+    """Setup test environment with database and rate limiter."""
+    # Setup test database
     engine = create_async_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    yield engine
-    await engine.dispose()
-
-@pytest.fixture(scope="function")
-async def db_session(test_engine):
-    async_session = async_sessionmaker(test_engine, expire_on_commit=False)
-    async with async_session() as session:
-        yield session
-        await session.rollback()
-
-@pytest.fixture(scope="function", autouse=True)
-async def setup_app_db(db_session):
+    
+    # Setup test session maker
+    async_session = async_sessionmaker(engine, expire_on_commit=False)
+    
+    # Override database dependency
     async def override_get_db():
-        async with db_session as session:
+        async with async_session() as session:
             yield session
+    
     app.dependency_overrides[get_db] = override_get_db
+    
+    # Setup fake redis for rate limiter
+    fake_redis = fakeredis.aioredis.FakeRedis()
+    await FastAPILimiter.init(redis=fake_redis)
+    
     yield
-    app.dependency_overrides.clear()
-
-@pytest.fixture(autouse=True)
-def mock_auth():
-    def override_get_current_user():
-        now = datetime.utcnow()
-        return User(
-            id=1,
-            email="testuser@example.com",
-            full_name="Test User",
-            is_active=True,
-            role=UserRole.USER,
-            subscription_plan=SubscriptionPlan.FREE,
-            searches_used_this_month=0,
-            searches_limit=10,
-            subscription_expires_at=None,
-            created_at=now,
-            updated_at=now,
-        )
-    app.dependency_overrides[get_current_user] = override_get_current_user
-    yield
+    
+    # Cleanup
+    await FastAPILimiter.close()
+    await engine.dispose()
     app.dependency_overrides.clear() 

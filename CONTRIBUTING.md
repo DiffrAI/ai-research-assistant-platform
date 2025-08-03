@@ -33,7 +33,7 @@ Thank you for your interest in contributing to the AI Research Assistant Platfor
    ```bash
    # Backend setup
    uv sync
-   cp docs/example.env .env
+   cp .env.sample .env
    # Edit .env with your configuration
    
    # Frontend setup
@@ -44,7 +44,7 @@ Thank you for your interest in contributing to the AI Research Assistant Platfor
 3. **Start development servers**
    ```bash
    # Backend
-   make run-dev
+   uv run python main.py
    
    # Frontend (in another terminal)
    cd frontend && npm start
@@ -54,16 +54,31 @@ Thank you for your interest in contributing to the AI Research Assistant Platfor
 
 ### Backend Development
 
-The backend uses FastAPI with the following structure:
+The backend uses FastAPI with the following simplified structure:
 
 ```
 app/
-├── apis/           # API routes and controllers
-├── core/           # Core configuration and utilities
-├── models/         # Database models
-├── services/       # Business logic
-├── workflows/      # AI workflows and graphs
-└── tasks/          # Background tasks (Celery)
+├── api/                   # API endpoints
+│   ├── auth.py           # Authentication endpoints
+│   ├── chat.py           # Chat & streaming endpoints
+│   ├── research.py       # Research endpoints
+│   ├── payment.py        # Payment & subscription endpoints
+│   └── health.py         # Health check endpoints
+├── core/                 # Core infrastructure
+│   ├── config.py         # Configuration management
+│   ├── database.py       # Database setup & connections
+│   ├── server.py         # FastAPI application setup
+│   └── lifespan.py       # Application lifecycle management
+├── models/               # Data models
+│   └── models.py         # Unified Pydantic & SQLAlchemy models
+├── workflows/            # AI workflow components
+│   └── graphs/websearch/ # Web search AI workflows
+├── tasks/                # Background task processing
+├── auth.py              # Authentication logic & utilities
+├── payment.py           # Payment service integration
+├── responses.py         # Response formatting utilities
+├── exceptions.py        # Custom exception handling
+└── utils.py             # Essential utility functions
 ```
 
 ### Frontend Development
@@ -84,7 +99,7 @@ frontend/src/
 Copy the example environment file and configure it:
 
 ```bash
-cp docs/example.env .env
+cp .env.sample .env
 ```
 
 Required for development:
@@ -137,12 +152,12 @@ npm run test
 
 Run all tests:
 ```bash
-.venv/bin/python3 -m pytest tests/ -v
+uv run pytest tests/ -v
 ```
 
 Run specific test files:
 ```bash
-.venv/bin/python3 -m pytest tests/test_user.py -v
+uv run pytest tests/test_api.py -v
 ```
 
 Run with coverage:
@@ -395,8 +410,8 @@ Any other relevant information.
 - [Pytest Documentation](https://docs.pytest.org/)
 
 ### Community
-- [GitHub Issues](https://github.com/mahiuddinalkamal/ai-research-assistant-platform/issues)
-- [GitHub Discussions](https://github.com/mahiuddinalkamal/ai-research-assistant-platform/discussions)
+- [GitHub Issues](https://github.com/DiffrAI/ai-research-assistant-platform/issues)
+- [GitHub Discussions](https://github.com/DiffrAI/ai-research-assistant-platform/discussions)
 
 ## Areas for Contribution
 
