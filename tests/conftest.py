@@ -4,6 +4,7 @@ import asyncio
 
 import fakeredis.aioredis
 import pytest
+import pytest_asyncio
 from fastapi_limiter import FastAPILimiter
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -22,14 +23,25 @@ def event_loop():
     loop.close()
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest_asyncio.fixture(scope="session", autouse=True)
 async def setup_test_environment():
     """Setup test environment with database and rate limiter."""
+    # Import all models to ensure they are registered with SQLAlchemy
+    from app.models import UserDB  # noqa: F401
+    from app.models.models import UserDB as UserDBModel  # noqa: F401
+    
     # Setup test database
     engine = create_async_engine(
-        TEST_DATABASE_URL, connect_args={"check_same_thread": False}
+        TEST_DATABASE_URL, 
+        connect_args={"check_same_thread": False},
+        echo=False  # Disable SQL logging in tests
     )
+    
+    # Create all tables
     async with engine.begin() as conn:
+        # Drop all tables first to ensure clean state
+        await conn.run_sync(Base.metadata.drop_all)
+        # Create all tables
         await conn.run_sync(Base.metadata.create_all)
 
     # Setup test session maker
@@ -38,7 +50,13 @@ async def setup_test_environment():
     # Override database dependency
     async def override_get_db():
         async with async_session() as session:
-            yield session
+            try:
+                yield session
+            except Exception as e:
+                await session.rollback()
+                raise
+            finally:
+                await session.close()
 
     app.dependency_overrides[get_db] = override_get_db
 
