@@ -175,7 +175,7 @@ async def export_research(
     with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
         if isinstance(content, str):
             tmp_file.write(content.encode("utf-8"))
-        elif isinstance(content, bytes):
+        else:  # isinstance(content, bytes)
             tmp_file.write(content)
         tmp_file_path = tmp_file.name
 

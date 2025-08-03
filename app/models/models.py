@@ -122,7 +122,7 @@ class SubscriptionInfo(BaseModel):
 
 
 # SQLAlchemy Models
-class UserDB(Base):
+class UserDB(Base):  # type: ignore[valid-type,misc]
     """SQLAlchemy User model."""
 
     __tablename__ = "users"

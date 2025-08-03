@@ -1,7 +1,7 @@
 """Chat endpoints."""
 
 import asyncio
-from typing import Optional
+from typing import AsyncGenerator, Optional
 
 from fastapi import APIRouter, Depends, Request
 from fastapi_limiter.depends import RateLimiter
@@ -59,7 +59,7 @@ async def chat_stream(
 ) -> dict:
     """Stream chat tokens."""
 
-    async def generate_tokens():
+    async def generate_tokens() -> AsyncGenerator[str, None]:
         for i in range(number):
             yield f"data: Token {i + 1}\n\n"
             await asyncio.sleep(sleep)
@@ -85,7 +85,7 @@ async def chat_websearch(
         if spec is None:
             raise ImportError("Websearch module not available")
 
-        async def websearch_stream():
+        async def websearch_stream() -> AsyncGenerator[str, None]:
             yield f"data: Searching for: {question}\n\n"
             yield f"data: Processing with thread: {thread_id}\n\n"
             yield "data: [DONE]\n\n"
@@ -93,7 +93,7 @@ async def chat_websearch(
         return create_streaming_response(websearch_stream(), media_type="text/plain")
     except ImportError:
 
-        async def mock_stream():
+        async def mock_stream() -> AsyncGenerator[str, None]:
             yield f"data: Mock search for: {question}\n\n"
             yield "data: [DONE]\n\n"
 

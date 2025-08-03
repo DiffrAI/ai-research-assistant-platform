@@ -153,7 +153,7 @@ async def increment_user_searches(user_id: int, db: AsyncSession) -> bool:
         result = await db.execute(select(UserDB).where(UserDB.id == user_id))
         user = result.scalar_one_or_none()
         if user:
-            user.searches_used_this_month = user.searches_used_this_month + 1
+            user.searches_used_this_month = user.searches_used_this_month + 1  # type: ignore[assignment]
             await db.commit()
             logger.info(f"Incremented searches for user {user_id}")
             return True
