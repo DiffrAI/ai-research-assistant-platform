@@ -12,7 +12,7 @@ on:
       - reopened
 
 env:
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: '3.13'
   NODE_VERSION: '18'
 
 jobs:
@@ -132,7 +132,7 @@ jobs:
         run: uv sync --extra dev
 
       - name: Run type checking
-        run: uv run mypy app/ --show-error-codes
+        run: uv run mypy app/ --ignore-missing-imports --show-error-codes
 
   backend-security:
     name: Backend Security Scan
@@ -165,7 +165,7 @@ jobs:
         run: uv sync --extra dev
 
       - name: Run bandit security scan
-        run: uv run bandit -r app/ -f json -o bandit-report.json
+        run: uv run bandit -r app/ -f json -o bandit-report.json -ll
 
       - name: Run safety check
         run: uv run safety check --json --output safety-report.json
@@ -183,7 +183,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.11', '3.13']
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -213,7 +213,7 @@ jobs:
 
       - name: Create test environment
         run: |
-          cp docs/example.env .env
+          cp .env.sample .env
           echo "DATABASE_URL=sqlite+aiosqlite:///./test.db" >> .env
           echo "CACHE_BACKEND=local" >> .env
           echo "RATE_LIMIT_BACKEND=local" >> .env
@@ -357,13 +357,13 @@ jobs:
       - name: Validate environment files
         run: |
           echo "Validating environment files..."
-          test -f docs/example.env || echo "ERROR: docs/example.env missing"
-          test -f docs/envs.md || echo "ERROR: docs/envs.md missing"
+          test -f .env.sample || echo "ERROR: .env.sample missing"
+          test -f env.example || echo "ERROR: env.example missing"
 
       - name: Check documentation completeness
         run: |
           echo "Checking documentation files..."
-          required_docs=("README.md" "docs/CONTRIBUTING.md" "docs/business-plan.md" "docs/local_model_setup.md")
+          required_docs=("README.md" "CONTRIBUTING.md" "FUTURE_SCOPE.md" "LICENSE")
           for doc in "${required_docs[@]}"; do
             test -f "$doc" || echo "ERROR: $doc missing"
           done

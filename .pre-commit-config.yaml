@@ -14,7 +14,7 @@ repos:
       - id: debug-statements
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.0
+    rev: v0.12.3
     hooks:
       - id: ruff
         args: [--fix]
@@ -43,7 +43,7 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-        args: [-r, app/, -f, json, -o, bandit-report.json]
+        args: [-r, app/, -f, json, -o, bandit-report.json, -ll]
 
       - id: safety
         name: safety

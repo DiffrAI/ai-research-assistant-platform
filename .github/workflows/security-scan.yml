@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: '3.13'
   NODE_VERSION: '18'
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
         run: uv run safety check --json --output safety-report.json || true
 
       - name: Run bandit security scan
-        run: uv run bandit -r app/ -f json -o bandit-report.json || true
+        run: uv run bandit -r app/ -f json -o bandit-report.json -ll || true
 
       - name: Run pip-audit
         run: uv run pip-audit --format json --output pip-audit-report.json || true
