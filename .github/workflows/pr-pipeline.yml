@@ -49,11 +49,23 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev
 
-      - name: Run all ruff checks
+      - name: Run ruff linting
+        run: uv run python -m ruff check . --output-format=github
+
+      - name: Run ruff formatting check
         run: |
-          uv run python -m ruff check . --output-format=github
-          uv run python -m ruff format --check .
-          uv run python -m ruff check . --select I --output-format=github
+          echo "Checking code formatting..."
+          if ! uv run python -m ruff format --check .; then
+            echo "❌ Code formatting issues found. Running auto-format..."
+            uv run python -m ruff format .
+            echo "✅ Code has been auto-formatted. Please commit the changes."
+            exit 1
+          else
+            echo "✅ All files are properly formatted"
+          fi
+
+      - name: Run ruff import sorting check
+        run: uv run python -m ruff check . --select I --output-format=github
 
   backend-type-check:
     name: Backend Type Check
