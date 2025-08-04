@@ -52,7 +52,7 @@ async def setup_test_environment():
         async with async_session() as session:
             try:
                 yield session
-            except Exception as e:
+            except Exception:
                 await session.rollback()
                 raise
             finally:
