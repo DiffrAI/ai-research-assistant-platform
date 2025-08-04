@@ -68,14 +68,6 @@ def start_production_server() -> None:
     try:
         logger.info("✅ Production environment detected. Launching with Gunicorn...")
 
-        # Validate production settings
-        if (
-            not settings.SECRET_KEY
-            or settings.SECRET_KEY == "your-secret-key-change-in-production"
-        ):
-            logger.error("SECRET_KEY must be set in production!")
-            sys.exit(1)
-
         # Start with Gunicorn
         subprocess.run(["./start.sh"], check=True)
 
@@ -95,9 +87,6 @@ def main() -> None:
     try:
         # Setup signal handlers for graceful shutdown
         setup_signal_handlers()
-
-        # Validate environment configuration
-        validate_environment()
 
         # Start appropriate server based on environment
         if settings.ENVIRONMENT == AppEnvs.PRODUCTION:
