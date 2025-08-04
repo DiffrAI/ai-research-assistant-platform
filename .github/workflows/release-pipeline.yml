@@ -20,7 +20,7 @@ permissions:
 
 env:
   PYTHON_VERSION: '3.13'
-  NODE_VERSION: '18'
+  NODE_VERSION: '22'
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
