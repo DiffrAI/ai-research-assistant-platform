@@ -1,7 +1,7 @@
 """Web search component that retrieves search results for enhanced or rephrased questions."""
 
+import asyncio
 import random
-import time
 from typing import Any, List
 
 from loguru import logger
@@ -26,7 +26,7 @@ class WebSearchExecutor:
         jitter = random.uniform(0, 0.1 * delay)
         return float(delay + jitter)
 
-    def search(self, state: AgentState) -> dict[str, list[dict[str, Any]]]:
+    async def search(self, state: AgentState) -> dict[str, list[dict[str, Any]]]:
         """Executes web search queries using available questions in the state with robust error handling."""
         # Handle both enhanced questions (from question_enhancer) and single refined question (from question_rewriter)
         questions: List[Any] = []
@@ -81,11 +81,14 @@ class WebSearchExecutor:
                         logger.info(
                             f"Retrying search for '{query}' (attempt {attempt + 1}/{self._max_retries}) after {delay:.2f}s"
                         )
-                        time.sleep(delay)
+                        await asyncio.sleep(delay)
 
                     # Invoke the search tool with max_results parameter
-                    search_response = SEARCH_TOOL.invoke(
-                        {"query": query, "max_results": self.max_results}
+                    search_response = await asyncio.wait_for(
+                        SEARCH_TOOL.ainvoke(
+                            {"query": query, "max_results": self.max_results}
+                        ),
+                        timeout=settings.SEARCH_TIMEOUT,
                     )
 
                     # Handle different response formats
