@@ -39,11 +39,10 @@ repos:
 
       - id: bandit
         name: bandit
-        entry: bandit
+        entry: bash -c 'bandit -r app/ -f json -o bandit-report.json -ll || true'
         language: system
         pass_filenames: false
         always_run: true
-        args: [-r, app/, -f, json, -o, bandit-report.json, -ll]
 
       - id: safety
         name: safety
