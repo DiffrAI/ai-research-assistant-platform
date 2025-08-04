@@ -3,13 +3,7 @@
 from typing import AsyncGenerator
 
 from loguru import logger
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import (
-    AsyncConnection,
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
 
 from app import settings
@@ -50,34 +44,9 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db() -> None:
     """Initialize database tables."""
-    async with engine.begin() as conn:
-        # Import all models here to ensure they are registered
-        from app.models.user_db import User  # noqa: F401
-
-        # Create all tables
-        await conn.run_sync(Base.metadata.create_all)
-
-        # Handle migration for existing databases
-        await migrate_add_stripe_customer_id(conn)
-
-        logger.info("Database tables created successfully")
-
-
-async def migrate_add_stripe_customer_id(conn: AsyncConnection) -> None:
-    """Add stripe_customer_id column if it doesn't exist."""
-    try:
-        # Check if stripe_customer_id column exists
-        result = await conn.execute(text("PRAGMA table_info(users)"))
-        columns = result.fetchall()
-        column_names = [col[1] for col in columns]
-
-        if "stripe_customer_id" not in column_names:
-            await conn.execute(
-                text("ALTER TABLE users ADD COLUMN stripe_customer_id VARCHAR")
-            )
-            logger.info("Added stripe_customer_id column to users table")
-    except Exception as e:
-        logger.warning(f"Migration warning (this is normal for new databases): {e}")
+    # Database migrations are handled by Alembic, so no need to create tables here.
+    # Import all models here to ensure they are registered with SQLAlchemy for Alembic to discover.
+    from app.models import UserDB  # noqa: F401
 
 
 async def close_db() -> None:

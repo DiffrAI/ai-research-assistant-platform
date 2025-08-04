@@ -1,34 +1,42 @@
 """Primary application entry point for AI Research Assistant Platform."""
 
 from fastapi import FastAPI
-from fastapi.middleware import Middleware
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from app.apis import api_routers
+from app.api import api_router
 from app.core.config import settings
-from app.core.exceptions import HandleExceptions
 from app.core.lifespan import lifespan
-from app.core.middlewares import LoggingMiddleware
+from app.exceptions import (
+    AppException,
+    app_exception_handler,
+    general_exception_handler,
+    validation_exception_handler,
+)
 
 
-def configure_middleware() -> list[Middleware]:
-    """Define and return middleware settings."""
-    return [
-        Middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        ),
-        Middleware(LoggingMiddleware),
-    ]
+def configure_middleware(app: FastAPI) -> None:
+    """Configure middleware for the application."""
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 def configure_routes(app: FastAPI) -> None:
     """Attach API routes to the application."""
-    app.include_router(api_routers)
+    app.include_router(api_router)
+
+
+def configure_exception_handlers(app: FastAPI) -> None:
+    """Configure exception handlers."""
+    app.add_exception_handler(AppException, app_exception_handler)
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(Exception, general_exception_handler)
 
 
 def configure_metrics(app: FastAPI) -> None:
@@ -50,16 +58,16 @@ def build_app() -> FastAPI:
 
 A comprehensive AI-powered research platform that combines web search capabilities with intelligent analysis and citation generation.
 
-## 🚀 Features
+## Features
 
-- **🔍 Web Search Integration**: Powered by DuckDuckGo (free) or Tavily for comprehensive web research
-- **🤖 AI Analysis**: Local model support via Ollama or OpenAI integration
-- **📚 Citation Management**: Automatic citation generation and reference tracking
-- **👤 User Management**: JWT-based authentication with user profiles and subscription plans
-- **💳 Payment Integration**: Stripe-powered subscription management
-- **📊 Research Analytics**: Usage tracking and trending topic analysis
-- **💾 Research Storage**: Save and organize research sessions
-- **📤 Export Capabilities**: Export research results in multiple formats
+- **Web Search Integration**: Powered by DuckDuckGo (free) or Tavily for comprehensive web research
+- **AI Analysis**: Local model support via Ollama or OpenAI integration
+- **Citation Management**: Automatic citation generation and reference tracking
+- **User Management**: JWT-based authentication with user profiles and subscription plans
+- **Payment Integration**: Stripe-powered subscription management
+- **Research Analytics**: Usage tracking and trending topic analysis
+- **Research Storage**: Save and organize research sessions
+- **Export Capabilities**: Export research results in multiple formats
 
 ## 🔧 API Endpoints
 
@@ -106,7 +114,7 @@ A comprehensive AI-powered research platform that combines web search capabiliti
 - Health check: `/health`
 - Metrics: `/metrics`
 
-## 🔐 Authentication
+## Authentication
 
 Most endpoints require JWT authentication. Include the token in the Authorization header:
 ```
@@ -116,11 +124,11 @@ Authorization: Bearer <your-jwt-token>
         version=settings.RELEASE_VERSION,
         docs_url=None if settings.ENVIRONMENT == "production" else "/docs",
         redoc_url=None if settings.ENVIRONMENT == "production" else "/redoc",
-        middleware=configure_middleware(),
         lifespan=lifespan,
     )
 
-    HandleExceptions(app=app_instance)
+    configure_middleware(app_instance)
+    configure_exception_handlers(app_instance)
     configure_routes(app_instance)
     configure_metrics(app_instance)
 

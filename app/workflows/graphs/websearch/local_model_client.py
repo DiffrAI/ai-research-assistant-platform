@@ -11,7 +11,7 @@ from loguru import logger
 from pydantic import BaseModel, SecretStr, ValidationError
 
 from app import settings
-from app.core.exceptions import ServiceUnavailableError
+from app.exceptions import ServiceUnavailableError
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -113,11 +113,7 @@ class LocalModelClient:
             error_msg += f": {last_error}"
 
         logger.error(error_msg)
-        raise ServiceUnavailableError(
-            message="Local model is currently unavailable",
-            service="ollama",
-            details={"model": self.model_name, "attempts": self.max_retries},
-        )
+        raise ServiceUnavailableError("Local model is currently unavailable")
 
     def invoke_with_structured_output(
         self, messages: List[BaseMessage], schema: Type[T]
