@@ -1,6 +1,6 @@
 import React from 'react';
 import { clsx } from 'clsx';
-import { CardProps } from '../../types';
+import type { CardProps } from '../../types';
 
 const Card: React.FC<CardProps> = ({ 
   children, 

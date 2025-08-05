@@ -104,10 +104,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ className = '' 
     filter === 'all' || (filter === 'unread' && !notification.read)
   );
 
-  // Expose addNotification method to parent components
-  React.useImperativeHandle(React.createRef(), () => ({
-    addNotification,
-  }));
+  // Note: To use addNotification from parent, pass a ref to this component
 
   return (
     <>

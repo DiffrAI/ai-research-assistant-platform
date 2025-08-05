@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { clsx } from 'clsx';
-import { ModalProps } from '../../types';
+import type { ModalProps } from '../../types';
 
 const Modal: React.FC<ModalProps> = ({
   isOpen,

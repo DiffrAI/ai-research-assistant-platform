@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authAPI } from '../services/api';
-import { User, LoginCredentials, RegisterData } from '../types';
+import type { User, LoginCredentials, RegisterData } from '../types';
 
 interface AuthState {
   user: User | null;
@@ -22,7 +22,7 @@ interface AuthState {
 
 const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       // State
       user: null,
       token: null,

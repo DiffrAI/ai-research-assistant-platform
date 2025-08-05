@@ -78,7 +78,7 @@ export interface ApiError {
 }
 
 // UI Component types
-export interface ButtonProps {
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'link';
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -87,11 +87,9 @@ export interface ButtonProps {
   icon?: React.ComponentType<{ className?: string }>;
   iconPosition?: 'left' | 'right';
   className?: string;
-  onClick?: () => void;
-  type?: 'button' | 'submit' | 'reset';
 }
 
-export interface InputProps {
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   helperText?: string;
@@ -99,11 +97,6 @@ export interface InputProps {
   iconPosition?: 'left' | 'right';
   className?: string;
   containerClassName?: string;
-  value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string;
-  type?: string;
-  required?: boolean;
 }
 
 export interface CardProps {

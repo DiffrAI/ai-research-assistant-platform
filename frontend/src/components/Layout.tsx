@@ -73,7 +73,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               icon={X}
               className="text-gray-400 hover:text-gray-600"
               aria-label="Close sidebar"
-            />
+            >
+              <span className="sr-only">Close sidebar</span>
+            </Button>
           </div>
           <nav
             aria-label="Mobile navigation"
@@ -205,7 +207,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             icon={Menu}
             className="text-gray-700 hover:text-gray-900"
             aria-label="Open sidebar"
-          />
+          >
+            <span className="sr-only">Open sidebar</span>
+          </Button>
           <div className="flex flex-1 items-center justify-between">
             <div className="flex items-center">
               <div className="h-6 w-6 bg-primary-600 rounded flex items-center justify-center mr-2">
@@ -219,7 +223,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 size="sm"
                 icon={Bell}
                 className="text-gray-500 hover:text-gray-700"
-              />
+              >
+                <span className="sr-only">Notifications</span>
+              </Button>
               <div className="h-6 w-6 bg-gray-200 rounded-full flex items-center justify-center">
                 <User className="h-4 w-4 text-gray-600" />
               </div>

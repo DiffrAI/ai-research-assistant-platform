@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { UseApiOptions, UseApiReturn } from '../types';
+import type { UseApiOptions, UseApiReturn } from '../types';
 
 export const useApi = (): UseApiReturn => {
   const [loading, setLoading] = useState(false);

@@ -58,10 +58,7 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({ onSelectQuery, className 
     filter === 'all' || (filter === 'starred' && item.starred)
   );
 
-  // Expose addToHistory method to parent components
-  React.useImperativeHandle(React.createRef(), () => ({
-    addToHistory,
-  }));
+  // Note: To use addToHistory from parent, pass a ref to this component
 
   if (searchHistory.length === 0) {
     return (

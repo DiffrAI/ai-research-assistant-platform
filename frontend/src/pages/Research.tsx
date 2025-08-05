@@ -15,7 +15,7 @@ import useAuthStore from '../store/authStore';
 import { useApi } from '../hooks/useApi';
 import { useDebounce } from '../hooks/useDebounce';
 import { Button, Input, Card, Modal } from '../components/ui';
-import { ResearchQuery, SearchResult } from '../types';
+import type { SearchResult } from '../types';
 import { copyToClipboard } from '../utils/helpers';
 
 interface FormData {
@@ -46,7 +46,6 @@ const Research: React.FC = () => {
   });
 
   const query = watch('query');
-  const debouncedQuery = useDebounce(query, 300);
 
   const onSubmit = useCallback(async (data: FormData) => {
     setResults(null);
@@ -300,7 +299,9 @@ const Research: React.FC = () => {
                       size="sm"
                       icon={Copy}
                       className="ml-2 text-gray-400 hover:text-gray-600"
-                    />
+                    >
+                      <span className="sr-only">Copy citation</span>
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -354,7 +355,9 @@ const Research: React.FC = () => {
                             onClick={() => handleCopyToClipboard(result.url)}
                             icon={Copy}
                             className="text-gray-400 hover:text-gray-600"
-                          />
+                          >
+                            <span className="sr-only">Copy URL</span>
+                          </Button>
                           <a
                             href={result.url}
                             target="_blank"

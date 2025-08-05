@@ -5,7 +5,7 @@ import { Eye, EyeOff, Mail, Lock, User, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 import { Button, Input } from '../components/ui';
-import { LoginCredentials, RegisterData } from '../types';
+import type { LoginCredentials, RegisterData } from '../types';
 
 interface FormData extends RegisterData {
   // RegisterData already includes email, password, full_name

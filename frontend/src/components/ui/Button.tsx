@@ -1,6 +1,6 @@
 import React from 'react';
 import { clsx } from 'clsx';
-import { ButtonProps } from '../../types';
+import type { ButtonProps } from '../../types';
 import LoadingSpinner from './LoadingSpinner';
 
 const Button: React.FC<ButtonProps> = ({

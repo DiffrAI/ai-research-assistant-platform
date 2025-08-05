@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import { 
+import type { 
   LoginCredentials, 
   RegisterData, 
   User, 
