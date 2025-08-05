@@ -1,10 +1,28 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authAPI } from '../services/api';
+import { User, LoginCredentials, RegisterData } from '../types';
 
-const useAuthStore = create(
+interface AuthState {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+  setUser: (user: User | null) => void;
+  setToken: (token: string | null) => void;
+  setLoading: (isLoading: boolean) => void;
+  setError: (error: string | null) => void;
+  login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>;
+  register: (userData: RegisterData) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<void>;
+  clearError: () => void;
+}
+
+const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       // State
       user: null,
       token: null,
@@ -19,7 +37,7 @@ const useAuthStore = create(
       setError: (error) => set({ error }),
 
       // Login
-      login: async (credentials) => {
+      login: async (credentials: LoginCredentials) => {
         set({ isLoading: true, error: null });
         try {
           const response = await authAPI.login(credentials);
@@ -44,7 +62,7 @@ const useAuthStore = create(
           });
 
           return { success: true };
-        } catch (error) {
+        } catch (error: any) {
           const errorMessage = error.response?.data?.message || 'Login failed';
           set({ error: errorMessage, isLoading: false });
           return { success: false, error: errorMessage };
@@ -52,7 +70,7 @@ const useAuthStore = create(
       },
 
       // Register
-      register: async (userData) => {
+      register: async (userData: RegisterData) => {
         set({ isLoading: true, error: null });
         try {
           const response = await authAPI.register(userData);
@@ -66,7 +84,7 @@ const useAuthStore = create(
           });
 
           return { success: true };
-        } catch (error) {
+        } catch (error: any) {
           const errorMessage =
             error.response?.data?.message || 'Registration failed';
           set({ error: errorMessage, isLoading: false });
@@ -78,7 +96,7 @@ const useAuthStore = create(
       logout: async () => {
         try {
           await authAPI.logout();
-        } catch (error) {
+        } catch (error: any) {
           console.error('Logout error:', error);
         } finally {
           // Clear localStorage
@@ -111,7 +129,7 @@ const useAuthStore = create(
             token,
             isAuthenticated: true,
           });
-        } catch (error) {
+        } catch (error: any) {
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');
           set({
