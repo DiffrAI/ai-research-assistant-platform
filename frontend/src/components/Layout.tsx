@@ -15,7 +15,8 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import { Button } from './ui';
-import { NavigationItem } from '../types';
+import NotificationCenter from './NotificationCenter';
+import type { NavigationItem } from '../types';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -37,10 +38,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, []);
 
   const navigation: NavigationItem[] = [
-    { name: 'Research', href: '/', icon: Search, description: 'Conduct AI-powered research' },
+    { name: 'Dashboard', href: '/', icon: BarChart3, description: 'Overview and quick actions' },
+    { name: 'Research', href: '/research', icon: Search, description: 'Conduct AI-powered research' },
     { name: 'Saved Research', href: '/saved', icon: BookOpen, description: 'View your saved research' },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3, description: 'Research insights and stats' },
-    { name: 'Trending', href: '/trending', icon: TrendingUp, description: 'Popular research topics' },
+    { name: 'Analytics', href: '/analytics', icon: TrendingUp, description: 'Research insights and stats' },
     { name: 'Subscription', href: '/subscription', icon: CreditCard, description: 'Manage your plan' },
     { name: 'Profile', href: '/profile', icon: User, description: 'Account settings' },
   ];
@@ -218,14 +219,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <h1 className="text-lg font-semibold text-gray-900">AI Research</h1>
             </div>
             <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={Bell}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <span className="sr-only">Notifications</span>
-              </Button>
+              <NotificationCenter />
               <div className="h-6 w-6 bg-gray-200 rounded-full flex items-center justify-center">
                 <User className="h-4 w-4 text-gray-600" />
               </div>

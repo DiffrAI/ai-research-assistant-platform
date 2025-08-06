@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Research from './pages/Research';
 import Subscription from './pages/Subscription';
+import Dashboard from './components/Dashboard';
 import useAuthStore from './store/authStore';
 import { ErrorBoundary } from './components/ui';
 
@@ -76,6 +77,17 @@ const App: React.FC = () => {
           {/* Protected routes */}
           <Route
             path="/"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Dashboard onStartResearch={() => window.location.href = '/research'} />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/research"
             element={
               <ProtectedRoute>
                 <Layout>
