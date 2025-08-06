@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Check } from 'lucide-react';
 import { paymentAPI } from '../services/api';
+import { handleAPIError } from '../utils/errorHandling';
 import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
 import { useSearchParams } from 'react-router-dom';
@@ -49,13 +50,14 @@ const Subscription = () => {
     try {
       const [plansResponse, usageResponse] = await Promise.all([
         paymentAPI.getPlans(),
-        paymentAPI.getUsage(),
+        paymentAPI.getSubscription(),
       ]);
 
       setPlans(plansResponse.data.data.plans);
       setUsage(usageResponse.data.data);
     } catch (error) {
-      toast.error('Failed to load subscription data');
+      const { message } = handleAPIError(error, 'fetchSubscriptionData');
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +74,8 @@ const Subscription = () => {
       // Redirect to Stripe checkout
       window.location.href = response.data.data.checkout_url;
     } catch (error) {
-      toast.error('Failed to create checkout session');
+      const { message } = handleAPIError(error, 'createCheckoutSession');
+      toast.error(message);
     }
   };
 
@@ -83,7 +86,8 @@ const Subscription = () => {
       );
       window.location.href = response.data.data.portal_url;
     } catch (error) {
-      toast.error('Failed to open billing portal');
+      const { message } = handleAPIError(error, 'createPortalSession');
+      toast.error(message);
     }
   };
 

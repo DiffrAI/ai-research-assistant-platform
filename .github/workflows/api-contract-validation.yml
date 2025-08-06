@@ -1,0 +1,87 @@
+name: API Contract Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/src/services/api.ts'
+      - 'app/api/*.py'
+      - 'scripts/validate_api_contracts.py'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/src/services/api.ts'
+      - 'app/api/*.py'
+      - 'scripts/validate_api_contracts.py'
+
+jobs:
+  validate-api-contracts:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Make validation script executable
+      run: chmod +x scripts/validate_api_contracts.py
+      
+    - name: Run API contract validation
+      run: python scripts/validate_api_contracts.py
+      
+    - name: Upload validation report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: api-contract-report
+        path: api_contract_report.json
+        
+    - name: Comment on PR with results
+      if: github.event_name == 'pull_request' && failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          try {
+            const report = JSON.parse(fs.readFileSync('api_contract_report.json', 'utf8'));
+            
+            let comment = '## 🔍 API Contract Validation Failed\n\n';
+            
+            if (report.mismatches.length > 0) {
+              comment += '### ❌ Mismatches Found:\n\n';
+              report.mismatches.forEach(mismatch => {
+                comment += `- **${mismatch.method} ${mismatch.endpoint}**\n`;
+                if (mismatch.similar.length > 0) {
+                  comment += `  - Similar endpoints: ${mismatch.similar.join(', ')}\n`;
+                }
+              });
+            }
+            
+            if (report.warnings.length > 0) {
+              comment += '\n### ⚠️ Warnings:\n\n';
+              report.warnings.forEach(warning => {
+                comment += `- ${warning}\n`;
+              });
+            }
+            
+            comment += `\n### 📊 Summary:\n`;
+            comment += `- Frontend API calls: ${report.summary.frontend_calls_count}\n`;
+            comment += `- Backend endpoints: ${report.summary.backend_endpoints_count}\n`;
+            comment += `- Mismatches: ${report.summary.mismatches_count}\n`;
+            comment += `- Warnings: ${report.summary.warnings_count}\n`;
+            
+            comment += '\n**Please fix these mismatches before merging.**';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } catch (error) {
+            console.log('Could not read report file or create comment:', error);
+          }

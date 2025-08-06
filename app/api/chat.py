@@ -50,9 +50,10 @@ def rate_limit_key_func(request: Request) -> str:
     return "unknown_host"
 
 
-@router.get("/stream", dependencies=[Depends(RateLimiter(times=5, seconds=60))])
+@router.get("/stream")
 async def chat_stream(
     request: Request,
+    message: str = "",
     sleep: float = 1.0,
     number: int = 10,
     current_user: UserInDB = Depends(get_current_user),
@@ -60,6 +61,8 @@ async def chat_stream(
     """Stream chat tokens."""
 
     async def generate_tokens() -> AsyncGenerator[str, None]:
+        if message:
+            yield f"data: Processing message: {message}\n\n"
         for i in range(number):
             yield f"data: Token {i + 1}\n\n"
             await asyncio.sleep(sleep)
@@ -68,7 +71,7 @@ async def chat_stream(
     return create_streaming_response(generate_tokens(), media_type="text/plain")
 
 
-@router.get("/websearch", dependencies=[Depends(RateLimiter(times=5, seconds=60))])
+@router.get("/websearch")
 async def chat_websearch(
     request: Request,
     question: Optional[str] = None,

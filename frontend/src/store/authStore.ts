@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authAPI } from '../services/api';
+import { handleAPIError } from '../utils/errorHandling';
 import type { User, LoginCredentials, RegisterData } from '../types';
 
 interface AuthState {
@@ -63,9 +64,9 @@ const useAuthStore = create<AuthState>()(
 
           return { success: true };
         } catch (error: any) {
-          const errorMessage = error.response?.data?.message || 'Login failed';
-          set({ error: errorMessage, isLoading: false });
-          return { success: false, error: errorMessage };
+          const { message, isAuthError } = handleAPIError(error, 'login');
+          set({ error: message, isLoading: false });
+          return { success: false, error: message };
         }
       },
 
@@ -85,10 +86,9 @@ const useAuthStore = create<AuthState>()(
 
           return { success: true };
         } catch (error: any) {
-          const errorMessage =
-            error.response?.data?.message || 'Registration failed';
-          set({ error: errorMessage, isLoading: false });
-          return { success: false, error: errorMessage };
+          const { message } = handleAPIError(error, 'registration');
+          set({ error: message, isLoading: false });
+          return { success: false, error: message };
         }
       },
 
@@ -97,7 +97,7 @@ const useAuthStore = create<AuthState>()(
         try {
           await authAPI.logout();
         } catch (error: any) {
-          console.error('Logout error:', error);
+          handleAPIError(error, 'logout');
         } finally {
           // Clear localStorage
           localStorage.removeItem('authToken');
@@ -130,6 +130,7 @@ const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
           });
         } catch (error: any) {
+          handleAPIError(error, 'checkAuth');
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');
           set({

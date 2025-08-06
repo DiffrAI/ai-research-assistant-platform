@@ -14,10 +14,18 @@ from app.exceptions import (
     general_exception_handler,
     validation_exception_handler,
 )
+from app.middleware.endpoint_validation import EndpointValidationMiddleware
+from app.middleware.api_monitoring import APIMonitoringMiddleware
 
 
 def configure_middleware(app: FastAPI) -> None:
     """Configure middleware for the application."""
+    # Add monitoring middleware first to capture all requests
+    app.add_middleware(APIMonitoringMiddleware)
+    
+    # Add endpoint validation middleware
+    app.add_middleware(EndpointValidationMiddleware)
+    
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],

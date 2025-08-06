@@ -65,17 +65,17 @@ export const paymentAPI = {
   getPlans: (): Promise<AxiosResponse<ApiResponse<any>>> => 
     api.get('/api/v1/payment/plans'),
   createCheckoutSession: (plan: string, successUrl: string, cancelUrl: string): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.post('/api/v1/payment/create-checkout-session', {
+    api.post('/api/v1/payment/checkout', {
       plan,
       success_url: successUrl,
       cancel_url: cancelUrl,
     }),
   createPortalSession: (returnUrl: string): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.post('/api/v1/payment/create-portal-session', {
+    api.post('/api/v1/payment/portal', {
       return_url: returnUrl,
     }),
-  getUsage: (): Promise<AxiosResponse<ApiResponse<any>>> => 
-    api.get('/api/v1/payment/usage'),
+  getSubscription: (): Promise<AxiosResponse<ApiResponse<any>>> => 
+    api.get('/api/v1/payment/subscription'),
 };
 
 // Research API
@@ -100,14 +100,14 @@ export const researchAPI = {
     api.get('/api/v1/research/analytics', { params: { days } }),
 };
 
-// Chat API (original endpoints)
+// Chat API (aligned endpoints)
 export const chatAPI = {
-  chat: (message: string): Promise<AxiosResponse<ApiResponse<any>>> => 
-    api.get('/api/v1/chat/chat', { params: { message } }),
+  chat: (message: string, sleep: number = 1.0, number: number = 10): Promise<AxiosResponse<ApiResponse<any>>> => 
+    api.get('/api/v1/chat/stream', { params: { message, sleep, number } }),
   websearch: (query: string): Promise<AxiosResponse<ApiResponse<any>>> =>
     api.get('/api/v1/chat/websearch', { params: { query } }),
   summary: (data: any): Promise<AxiosResponse<ApiResponse<any>>> => 
-    api.post('/api/v1/chat/celery/summary', data),
+    api.post('/api/v1/chat/summary', data),
 };
 
 export default api;

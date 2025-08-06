@@ -92,21 +92,19 @@ const SearchHistory = React.forwardRef<SearchHistoryRef, SearchHistoryProps>(({ 
           <div className="flex rounded-lg border border-gray-200 p-1">
             <button
               onClick={() => setFilter('all')}
-              className={`px-3 py-1 text-sm rounded transition-colors ${
-                filter === 'all'
-                  ? 'bg-primary-100 text-primary-700'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`px-3 py-1 text-sm rounded transition-colors ${filter === 'all'
+                ? 'bg-primary-100 text-primary-700'
+                : 'text-gray-600 hover:text-gray-900'
+                }`}
             >
               All
             </button>
             <button
               onClick={() => setFilter('starred')}
-              className={`px-3 py-1 text-sm rounded transition-colors ${
-                filter === 'starred'
-                  ? 'bg-primary-100 text-primary-700'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`px-3 py-1 text-sm rounded transition-colors ${filter === 'starred'
+                ? 'bg-primary-100 text-primary-700'
+                : 'text-gray-600 hover:text-gray-900'
+                }`}
             >
               Starred
             </button>
@@ -151,17 +149,16 @@ const SearchHistory = React.forwardRef<SearchHistoryRef, SearchHistoryProps>(({ 
                 </div>
               </button>
             </div>
-            
+
             <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => toggleStar(item.id)}
-                className={`p-1 ${
-                  item.starred
-                    ? 'text-yellow-500 hover:text-yellow-600'
-                    : 'text-gray-400 hover:text-yellow-500'
-                }`}
+                className={`p-1 ${item.starred
+                  ? 'text-yellow-500 hover:text-yellow-600'
+                  : 'text-gray-400 hover:text-yellow-500'
+                  }`}
               >
                 <Star className={`h-4 w-4 ${item.starred ? 'fill-current' : ''}`} />
               </Button>
