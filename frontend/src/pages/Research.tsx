@@ -39,7 +39,7 @@ const Research: React.FC = () => {
   const [searchDuration, setSearchDuration] = useState<number | null>(null);
   const { user } = useAuthStore();
   const { loading: isLoading, execute } = useApi();
-  const searchHistoryRef = useRef<any>(null);
+  const searchHistoryRef = useRef<{ addToHistory: (query: string, resultsCount?: number) => void }>(null);
 
   const {
     register,

@@ -17,7 +17,11 @@ interface SearchHistoryProps {
   className?: string;
 }
 
-const SearchHistory: React.FC<SearchHistoryProps> = ({ onSelectQuery, className = '' }) => {
+interface SearchHistoryRef {
+  addToHistory: (query: string, resultsCount?: number) => void;
+}
+
+const SearchHistory = React.forwardRef<SearchHistoryRef, SearchHistoryProps>(({ onSelectQuery, className = '' }, ref) => {
   const [searchHistory, setSearchHistory] = useLocalStorage<SearchHistoryItem[]>('searchHistory', []);
   const [filter, setFilter] = useState<'all' | 'starred'>('all');
 
@@ -58,7 +62,10 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({ onSelectQuery, className 
     filter === 'all' || (filter === 'starred' && item.starred)
   );
 
-  // Note: To use addToHistory from parent, pass a ref to this component
+  // Expose addToHistory method to parent components
+  React.useImperativeHandle(ref, () => ({
+    addToHistory,
+  }));
 
   if (searchHistory.length === 0) {
     return (
@@ -172,6 +179,8 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({ onSelectQuery, className 
       </div>
     </Card>
   );
-};
+});
+
+SearchHistory.displayName = 'SearchHistory';
 
 export default SearchHistory;
