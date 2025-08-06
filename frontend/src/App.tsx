@@ -6,31 +6,33 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Research from './pages/Research';
 import Subscription from './pages/Subscription';
+import Dashboard from './components/Dashboard';
 import useAuthStore from './store/authStore';
+import { ErrorBoundary } from './components/ui';
 
 // Placeholder components for other pages
-const SavedResearch = () => (
+const SavedResearch: React.FC = () => (
   <div className="space-y-6">
     <h1 className="text-2xl font-bold text-gray-900">Saved Research</h1>
     <p className="text-gray-600">Your saved research will appear here.</p>
   </div>
 );
 
-const Analytics = () => (
+const Analytics: React.FC = () => (
   <div className="space-y-6">
     <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
     <p className="text-gray-600">Your research analytics will appear here.</p>
   </div>
 );
 
-const Trending = () => (
+const Trending: React.FC = () => (
   <div className="space-y-6">
     <h1 className="text-2xl font-bold text-gray-900">Trending Topics</h1>
     <p className="text-gray-600">Trending research topics will appear here.</p>
   </div>
 );
 
-const Profile = () => (
+const Profile: React.FC = () => (
   <div className="space-y-6">
     <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
     <p className="text-gray-600">Your profile settings will appear here.</p>
@@ -38,7 +40,7 @@ const Profile = () => (
 );
 
 // Protected Route component
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, checkAuth } = useAuthStore();
 
   useEffect(() => {
@@ -52,28 +54,40 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-function App() {
+const App: React.FC = () => {
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <div className="App">
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-          }}
-        />
+    <ErrorBoundary>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <div className="App">
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+            }}
+          />
 
-        <Routes>
+          <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
 
           {/* Protected routes */}
           <Route
             path="/"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Dashboard onStartResearch={() => window.location.href = '/research'} />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/research"
             element={
               <ProtectedRoute>
                 <Layout>
@@ -141,9 +155,10 @@ function App() {
           {/* Redirect to home for unknown routes */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </div>
-    </Router>
+        </div>
+      </Router>
+    </ErrorBoundary>
   );
-}
+};
 
 export default App;

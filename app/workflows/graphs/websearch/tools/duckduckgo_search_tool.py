@@ -1,10 +1,13 @@
 """DuckDuckGo search tool for websearch."""
 
+import asyncio
 import random
 import time
 from typing import Any, Optional
+from urllib.parse import quote_plus
 
-from duckduckgo_search import DDGS
+import httpx
+from bs4 import BeautifulSoup
 from langchain_core.tools import BaseTool
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -28,22 +31,14 @@ class DuckDuckGoSearchTool(BaseTool):
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
-        self._ddgs: Optional[DDGS] = None  # Initialize lazily
+        self.base_url = "https://html.duckduckgo.com/html/"
+        self.headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
         # Store retry settings as instance variables (not Pydantic fields)
         self._max_retries = settings.SEARCH_MAX_RETRIES
         self._base_delay = settings.SEARCH_BASE_DELAY
         self._max_delay = settings.SEARCH_MAX_DELAY
-
-    @property
-    def ddgs(self) -> DDGS:
-        """Lazy initialization of DDGS instance."""
-        if self._ddgs is None:
-            try:
-                self._ddgs = DDGS()
-            except Exception as e:
-                logger.error(f"Failed to initialize DDGS: {e}")
-                raise
-        return self._ddgs
 
     def _exponential_backoff_delay(self, attempt: int) -> float:
         """Calculate exponential backoff delay with jitter."""
@@ -78,7 +73,6 @@ class DuckDuckGoSearchTool(BaseTool):
         logger.info(
             f"DuckDuckGo search tool called with query='{query}', max_results={max_results}, using search_max_results={search_max_results}"
         )
-        logger.info(f"Tool instance max_results: {self.max_results}")
 
         # Ensure max_results is an integer
         try:
@@ -88,9 +82,6 @@ class DuckDuckGoSearchTool(BaseTool):
                 f"Invalid max_results value: {search_max_results}, using default: {self.max_results}"
             )
             search_max_results = self.max_results
-
-        # Limit results to the requested max_results
-        logger.info(f"Will limit results to {search_max_results} items")
 
         for attempt in range(self._max_retries):
             try:
@@ -106,12 +97,28 @@ class DuckDuckGoSearchTool(BaseTool):
 
                 # Perform the search with timeout
                 start_time = time.time()
-                logger.info(
-                    f"Calling DuckDuckGo with query='{query}' and max_results={search_max_results}"
-                )
-                results = list(self.ddgs.text(query, max_results=search_max_results))
+                
+                # Use httpx for the search
+                with httpx.Client(timeout=30.0) as client:
+                    params = {
+                        "q": query,
+                        "kl": "wt-wt",
+                    }
+                    
+                    response = client.get(
+                        self.base_url, 
+                        params=params, 
+                        headers=self.headers,
+                        follow_redirects=True
+                    )
+                    response.raise_for_status()
+
+                    # Parse the HTML response
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    results = self._parse_results(soup, search_max_results)
+                
                 search_time = time.time() - start_time
-                logger.info(f"DuckDuckGo returned {len(results)} raw results")
+                logger.info(f"DuckDuckGo returned {len(results)} results")
 
                 # Validate results
                 if not results:
@@ -122,36 +129,12 @@ class DuckDuckGoSearchTool(BaseTool):
                         continue
                     return self._create_fallback_response(query, "No results found")
 
-                # Transform results to match Tavily format
-                formatted_results = []
-                for result in results:
-                    try:
-                        formatted_result = {
-                            "title": result.get("title", "Untitled"),
-                            "link": result.get("link", ""),
-                            "content": result.get("body", ""),
-                            "source": "DuckDuckGo",
-                        }
-                        # Only add results with content
-                        if formatted_result["content"]:
-                            formatted_results.append(formatted_result)
-                    except Exception as e:
-                        logger.warning(f"Error formatting result: {e}")
-                        continue
-
-                # Limit results to the requested max_results
-                if len(formatted_results) > search_max_results:
-                    logger.info(
-                        f"Limiting results from {len(formatted_results)} to {search_max_results}"
-                    )
-                    formatted_results = formatted_results[:search_max_results]
-
                 logger.info(
-                    f"DuckDuckGo search completed successfully with {len(formatted_results)} results in {search_time:.2f}s"
+                    f"DuckDuckGo search completed successfully with {len(results)} results in {search_time:.2f}s"
                 )
 
                 return {
-                    "results": formatted_results,
+                    "results": results,
                     "query": query,
                     "source": "DuckDuckGo",
                     "search_time": search_time,
@@ -184,6 +167,49 @@ class DuckDuckGoSearchTool(BaseTool):
 
         # This should never be reached, but add explicit return for safety
         return self._create_fallback_response(query, "Unexpected end of retry loop")
+
+    def _parse_results(self, soup: BeautifulSoup, max_results: int) -> list[dict[str, Any]]:
+        """Parse search results from HTML."""
+        results = []
+        
+        # Find result containers
+        result_containers = soup.find_all('div', class_='result')
+        
+        for container in result_containers[:max_results]:
+            try:
+                # Extract title and link
+                title_elem = container.find('a', class_='result__a')
+                if not title_elem:
+                    continue
+                    
+                title = title_elem.get_text(strip=True)
+                link = title_elem.get('href', '')
+                
+                # Extract snippet
+                snippet_elem = container.find('a', class_='result__snippet')
+                snippet = snippet_elem.get_text(strip=True) if snippet_elem else ""
+                
+                # Clean up the link (DuckDuckGo sometimes uses redirect URLs)
+                if link.startswith('/l/?uddg='):
+                    # Extract the actual URL from DuckDuckGo's redirect
+                    import urllib.parse
+                    parsed = urllib.parse.parse_qs(urllib.parse.urlparse(link).query)
+                    if 'uddg' in parsed:
+                        link = urllib.parse.unquote(parsed['uddg'][0])
+                
+                if title and link and snippet:
+                    results.append({
+                        "title": title,
+                        "link": link,
+                        "content": snippet,
+                        "source": "DuckDuckGo",
+                    })
+                    
+            except Exception as e:
+                logger.warning(f"Error parsing search result: {e}")
+                continue
+                
+        return results
 
     def _create_fallback_response(self, query: str, error_msg: str) -> dict[str, Any]:
         """Create a fallback response when search fails."""

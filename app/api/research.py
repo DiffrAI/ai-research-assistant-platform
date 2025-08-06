@@ -6,10 +6,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from fastapi_limiter.depends import RateLimiter
 from pydantic import BaseModel
+from loguru import logger
 
 from app.auth import get_current_user
 from app.models import User
 from app.responses import create_response
+# Import httpx and BeautifulSoup for web scraping
+import httpx
+from bs4 import BeautifulSoup
+import time
+import random
+from urllib.parse import quote_plus
 
 router = APIRouter()
 
@@ -27,6 +34,7 @@ class ResearchResponse(BaseModel):
     query: str
     results: List[Any] = []
     citations: List[Any] = []
+    summary: str = ""
 
 
 class ExportRequest(BaseModel):
@@ -35,10 +43,133 @@ class ExportRequest(BaseModel):
 
 
 class ResearchService:
+    def _search_duckduckgo(self, query: str, max_results: int = 10) -> dict:
+        """Simple DuckDuckGo search implementation."""
+        try:
+            # Encode the query for URL
+            encoded_query = quote_plus(query)
+            url = f"https://html.duckduckgo.com/html/?q={encoded_query}"
+            
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            }
+            
+            # Make the request
+            with httpx.Client(timeout=10.0) as client:
+                response = client.get(url, headers=headers)
+                response.raise_for_status()
+            
+            # Parse the HTML
+            soup = BeautifulSoup(response.text, 'html.parser')
+            results = []
+            
+            # Find search result elements
+            result_elements = soup.find_all('div', class_='result')[:max_results]
+            
+            for element in result_elements:
+                title_elem = element.find('a', class_='result__a')
+                snippet_elem = element.find('a', class_='result__snippet')
+                
+                if title_elem:
+                    title = title_elem.get_text(strip=True)
+                    link = title_elem.get('href', '')
+                    snippet = snippet_elem.get_text(strip=True) if snippet_elem else ""
+                    
+                    # Clean up the link (DuckDuckGo sometimes uses redirect URLs)
+                    if link.startswith('/l/?uddg='):
+                        # Extract the actual URL from DuckDuckGo's redirect
+                        import urllib.parse
+                        parsed = urllib.parse.parse_qs(urllib.parse.urlparse(link).query)
+                        if 'uddg' in parsed:
+                            link = parsed['uddg'][0]
+                    
+                    results.append({
+                        "title": title,
+                        "link": link,
+                        "content": snippet,
+                        "source": "DuckDuckGo",
+                    })
+            
+            return {
+                "results": results,
+                "query": query,
+                "source": "DuckDuckGo",
+                "total_results": len(results)
+            }
+            
+        except Exception as e:
+            logger.error(f"DuckDuckGo search failed: {str(e)}")
+            return {
+                "results": [],
+                "query": query,
+                "error": str(e),
+                "source": "DuckDuckGo",
+                "total_results": 0
+            }
+
     async def conduct_research(
         self, user_id: str, request: ResearchRequest
     ) -> tuple[ResearchResponse, str, int]:
-        return ResearchResponse(query=request.query), "Success", 200
+        """Conduct research using DuckDuckGo search."""
+        try:
+            logger.info(f"Starting research for user {user_id} with query: {request.query}")
+            
+            # Use simple DuckDuckGo search
+            search_results = self._search_duckduckgo(
+                query=request.query,
+                max_results=request.max_results
+            )
+            
+            # Extract results from the search response
+            results = []
+            citations = []
+            
+            if "results" in search_results and search_results["results"]:
+                for result in search_results["results"]:
+                    # Convert search result to our format
+                    research_result = {
+                        "title": result.get("title", ""),
+                        "content": result.get("content", ""),
+                        "url": result.get("link", ""),
+                        "source": result.get("source", "DuckDuckGo"),
+                        "relevance_score": 0.8  # Default relevance score
+                    }
+                    results.append(research_result)
+                    
+                    # Add citation
+                    if result.get("title") and result.get("link"):
+                        citation = f"{result['title']}. Retrieved from {result['link']}"
+                        citations.append(citation)
+            
+            # Create summary from results
+            summary = ""
+            if results:
+                summary = f"Found {len(results)} results for '{request.query}'. "
+                if len(results) > 0:
+                    summary += f"Top result: {results[0]['title']}"
+            else:
+                summary = f"No results found for '{request.query}'"
+            
+            response = ResearchResponse(
+                query=request.query,
+                results=results,
+                citations=citations,
+                summary=summary
+            )
+            
+            logger.info(f"Research completed with {len(results)} results")
+            return response, "Research completed successfully", 200
+            
+        except Exception as e:
+            logger.error(f"Research failed for query '{request.query}': {str(e)}")
+            # Return empty results on error but don't fail completely
+            response = ResearchResponse(
+                query=request.query,
+                results=[],
+                citations=[],
+                summary=f"Search failed: {str(e)}"
+            )
+            return response, f"Research completed with errors: {str(e)}", 200
 
     async def save_research(
         self, user_id: str, response: ResearchResponse, tags: Optional[List[str]]
@@ -66,7 +197,7 @@ def get_user_id_from_token(current_user: User = Depends(get_current_user)) -> st
     return str(current_user.id)
 
 
-@router.post("/", dependencies=[Depends(RateLimiter(times=10, seconds=60))])
+@router.post("")
 async def conduct_research(
     research_request: ResearchRequest,
     research_service: ResearchService = Depends(get_research_service),
@@ -85,7 +216,7 @@ async def conduct_research(
     )
 
 
-@router.get("/stream", dependencies=[Depends(RateLimiter(times=5, seconds=60))])
+@router.get("/stream")
 async def conduct_research_stream(
     query: str,
     max_results: int = 10,
