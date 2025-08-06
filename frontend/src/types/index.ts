@@ -99,7 +99,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   containerClassName?: string;
 }
 
-export interface CardProps {
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   padding?: 'none' | 'sm' | 'md' | 'lg';
